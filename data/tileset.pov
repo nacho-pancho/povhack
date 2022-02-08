@@ -55,11 +55,14 @@
 //  pigment { color 0.2*White }  // floor
 //}
 
+// 
+// torch carried by our hero
+//
 #declare LocalLight =  light_source { 
-    <0,RoomHeight-0.1,0>, 0.5*LocalLightColor
+    <0,RoomHeight-0.1,0>, 0.7*LocalLightColor
     spotlight
-    radius 30
-    falloff 50 
+    radius 40
+    falloff 70 
     point_at <0,0,0>
 }
 

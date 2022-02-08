@@ -40,19 +40,19 @@ int main(int argc, char *argv[]) {
 	int i,c;
 	for (i = 0; (i < 21) && !feof(inf); ++i) {
 	  for (int j = 0; !feof(inf) && ((c = fgetc(inf))!= '\n'); ++j ) {
-	    putchar(c);
+	    //putchar(c);
 	    chars[i*80+j] = c;
 	  }  
-	  putchar(c);
+	  //putchar(c);
 	}
 
 	printf("read %d char lines\n",i);
 	for (i = 0; (i < 21) && !feof(inf); ++i) {
 	  for (int j = 0; !feof(inf) && ((c = fgetc(inf))!= '\n'); ++j ) {
 	    attrs[i*80+j] = c;
-	    putchar(c);
+	    //putchar(c);
 	  }  
-	  putchar(c);
+	  //putchar(c);
 	}
 	printf("read %d attr lines\n",i);
 	char dir = '.';

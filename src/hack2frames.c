@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 	        prev_dir = dir;
 	      }
 	      printf("direction: %c\n",dir);
-	      dump_frame(vt,cursor_x,cursor_y);
+	      //dump_frame(vt,cursor_x,cursor_y);
 	      write_frame(ofprefix,vt,time,cursor_x,cursor_y,dir);
 	      frame++;
 	      save_frame = 0;
