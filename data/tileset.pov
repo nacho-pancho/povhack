@@ -2,52 +2,111 @@
 #include "textures.inc"
 #include "stones.inc"
 
-// default tiles are just the characters with the correponding color
-// and inverse character
-// the user may override any particular tile with any object
-// (first 33 elements are not used)
-#declare Tiles = array[127][16][2];
+//==================================================================
+// easily customizable stuff
+// "easy" if you know PovRay :)
+//==================================================================
 
-//#declare TileFont = "courier.ttf";
+#declare RoomHeight = 1.0;
+
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
 
-#declare ANSIColors = array[16]
-#declare ANSIColors[0] = pigment { color 0.66*White } // actually used as 'normal'
-#declare ANSIColors[1] = pigment { color 0.5*Red }
-#declare ANSIColors[2] = pigment { color 0.5*Green }
-#declare ANSIColors[3] = pigment { color Orange }
-#declare ANSIColors[4] = pigment { color 0.5*Blue }
-#declare ANSIColors[5] = pigment { color 0.5*Magenta } // could be Purple
-#declare ANSIColors[6] = pigment { color 0.5*Cyan }
-#declare ANSIColors[7] = pigment { color 0.66*White } // 'normal' color in Nethack
-
-#declare ANSIColors[8] = pigment { color 0.33*Black } // seldom used
-#declare ANSIColors[9] = pigment { color Red }
-#declare ANSIColors[10] = pigment { color Green }
-#declare ANSIColors[11] = pigment { color Yellow }
-#declare ANSIColors[12] = pigment { color Blue }
-#declare ANSIColors[13] = pigment { color Magenta }
-#declare ANSIColors[14] = pigment { color Cyan }
-#declare ANSIColors[15] = pigment { color White }
-
-#declare RoomHeight = 1.0;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
 
-#declare Floor = box { 
-  <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
-  pigment { color 0.5*White }  // floor
-  //texture {T_Stone8 }
-  normal { bumps 0.05 scale 0.1}
+#declare Brown1 = color <.2,.15,.1>;
+#declare Brown2 = color <.3,.25,.2>;
+#declare Brown3 = color <.4,.35,.3>;
+#declare Brown4 = color <.5,.475,.45>;
+
+#declare TileTexture = texture {
+  pigment { color White }
+  finish { 
+    phong 1 phong_size 10 
+    diffuse  0.9
+  }
 }
 
-#declare Wall = box {
+#declare DoorTexture = texture {
+      pigment {
+         bozo
+         color_map {
+            [0.0 0.4 color Brown1 color Brown1 ]
+            [0.4 1.01 color Brown3 color Brown3 ]
+         }
+         scale <4, 0.05, 0.05>
+      }
+      rotate y*45
+      scale 0.1
+   } texture {
+      finish {
+         phong 1
+         phong_size 100
+         brilliance 3
+         ambient 0.2
+         diffuse 0.8
+      }
+      pigment {
+         wood
+         turbulence 0.025
+
+         color_map {
+            [0.0 0.15 color Brown2 color Brown4 ]
+            [0.15 0.40 color Brown4 color Clear ]
+            [0.40 0.80 color Clear  color Brown4 ]
+            [0.80 1.01 color Brown4 color Brown2 ]
+         }
+
+         scale <3.5, 1, 1>
+         translate -50*y
+         rotate 1.5*z
+      }
+      rotate y*45
+      scale 0.1
+   }
+
+#declare WallTexture = texture {
+  pigment {
+    agate color_map{[0.0 0.3*White][1.0 0.5*White]}
+  }
+  normal { agate 0.5 }
+  scale 0.1
+}
+  
+#declare FloorTexture = texture {
+  pigment {
+    crackle color_map{[0.0 0.2*White][1.0 0.5*White]}
+  }
+  normal { crackle 1.6 }
+  scale <0.1,0.05,0.1>
+}
+
+#declare GroundColor1 = color <0.4,0.3,0.2>;
+#declare GroundColor2 = color <0.8,0.7,0.6>;
+
+#declare HallwayTexture = texture {
+  pigment {
+    granite color_map{ [0.0 GroundColor1][1.0 GroundColor2] }
+  }
+  normal { gradient 1.6 }
+  scale <0.05,0.10,0.05>  
+}
+
+#declare Wall = box { 
   <-0.51,0.0,-0.51>,<0.51,RoomHeight,0.51>
-  pigment { color <0.50,0.475,0.45>  }
-  normal { bumps 0.5 scale 0.2 rotate 45*(x+z)}
-  //texture {T_Stone7 }
+  texture { WallTexture }
+}
+
+#declare Floor = box {
+  <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
+  texture { FloorTexture }
+}
+
+#declare Hallway = box {
+  <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
+  texture { HallwayTexture }
 }
 
 #declare Ceiling = sphere {<0,0,0>,0 } 
@@ -71,11 +130,50 @@
     area_light 0.2*x,0.2*z,5,5
 }
 
+//
+// NetHack uses (usually) 16 color codes
+// the colors below are the standard VT100/ANSI assignments
+// to these codes
+// you may change them to whatever you like
+//
+#declare ANSIColors = array[16]
+#declare ANSIColors[0] = pigment { color 0.66*White } // actually used as 'normal'
+#declare ANSIColors[1] = pigment { color 0.5*Red }
+#declare ANSIColors[2] = pigment { color 0.5*Green }
+#declare ANSIColors[3] = pigment { color Orange }
+#declare ANSIColors[4] = pigment { color 0.5*Blue }
+#declare ANSIColors[5] = pigment { color 0.5*Magenta } // could be Purple
+#declare ANSIColors[6] = pigment { color 0.5*Cyan }
+#declare ANSIColors[7] = pigment { color 0.66*White } // 'normal' color in Nethack
+
+#declare ANSIColors[8] = pigment { color 0.33*Black } // seldom used
+#declare ANSIColors[9] = pigment { color Red }
+#declare ANSIColors[10] = pigment { color Green }
+#declare ANSIColors[11] = pigment { color Yellow }
+#declare ANSIColors[12] = pigment { color Blue }
+#declare ANSIColors[13] = pigment { color Magenta }
+#declare ANSIColors[14] = pigment { color Cyan }
+#declare ANSIColors[15] = pigment { color White }
+
+//
+//==================================================================
+// automation stuff
+// touch if you dare
+//==================================================================
+//
+// default tiles are just the characters with the correponding color
+// and inverse character
+// the user may override any particular tile with any object
+// (first 33 elements are not used)
+//
+#declare Tiles = array[127][16][2];
+
+
 #for (code,32,126) //127 not inc
   #for (col,0,15) 
     #declare BaseTile = text { 
       ttf TileFont chr(code) TileThickness, TileShift 
-      pigment { ANSIColors[col] } 
+      texture { TileTexture pigment { ANSIColors[col] } }
       translate 0.25*y-0.25*x-0.5*TileThickness*z
     }
     #declare Tiles[code][col][0] = union {
@@ -124,7 +222,7 @@
 //
 #declare Avatar = text { 
   ttf TileFont "@" TileThickness, TileShift 
-  pigment { ANSIColors[15] } 
+  texture { TileTexture pigment { ANSIColors[15] } }
   translate 0.25*y-0.25*x-0.5*TileThickness*z
 }
 #declare Tiles[64][7][0] = union { object { Floor } object {Avatar rotate Angle*y } }
@@ -133,21 +231,16 @@
 //
 // hallway floor
 //
-#declare Tiles[35][0][0] = Floor
-#declare Tiles[35][0][1] = Floor
-#declare Tiles[35][7][0] = Floor
-#declare Tiles[35][7][1] = Floor
-//#declare Tiles[35][7][0] = union { object { Floor } object {LocalLight} }
-//#declare Tiles[35][7][1] = union { object { Floor } object {LocalLight} }
+#declare Tiles[35][0][0] = Hallway
+#declare Tiles[35][0][1] = Tiles[35][0][0]
+#declare Tiles[35][7][0] = Tiles[35][0][0]
+#declare Tiles[35][7][1] = Tiles[35][0][0]
 //
 // room floor
 //
 #declare Tiles[46][0][0] = Floor
 
-#declare Tiles[46][0][1] = union {
-  object { Floor }
-//  object { LocalLight }
-}
+#declare Tiles[46][0][1] = Floor
 
 //
 // vertical walls
@@ -160,20 +253,17 @@
   Wall
 }
 
+// open horizontal door
 #declare Tiles[124][3][0] = union {
   object { Floor } 
   box { 
     <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5>
-    pigment { color Orange }  // this is an open Door, put a wood texture here
   }
+    texture { DoorTexture }
 }
-#declare Tiles[124][3][1] = union {
-  object { Floor } 
-  box { 
-    <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5>
-    pigment { color Orange }  // this is an open Door, put a wood texture here
-  }
-}
+
+#declare Tiles[124][3][1] = Tiles[124][3][0]
+
 ///
 // horizontal walls
 //
@@ -185,11 +275,12 @@
   Wall
 }
 
+// open vertical door
 #declare Tiles[45][3][0] = union { 
   object { Floor } 
   box { 
     <-0.51,0.0,-0.51>,<0.51,RoomHeight,-0.41>
-    pigment { color Orange }  // this is an open Door, put a wood texture here
+    texture { DoorTexture }
   }
 }
 #declare Tiles[45][3][1] = union { 
@@ -204,12 +295,10 @@
 //
 #declare Tiles[43][3][0] = box { // closed door
   <-0.5,0.0,-0.5>,<0.5,RoomHeight,0.5>
-  pigment { color Orange }  // this is a Door, put a wood texture here
+  texture { DoorTexture }
 }
-#declare Tiles[43][3][1] = box { // closed door
-  <-0.5,0.0,-0.5>,<0.5,RoomHeight,0.5>
-  pigment { color Orange }  // this is a Door, put a wood texture here
-}
+#declare Tiles[43][3][1] = Tiles[43][3][0]
+
 
 #declare Ladder = union {
   cylinder {<-0.2,-1.2*RoomHeight,-0.2>,<-0.2,1.2*RoomHeight,-0.2>,0.05}
@@ -218,7 +307,7 @@
     #declare Y = RoomHeight*(step/5)+0.1 ;
     cylinder {< -0.19, Y, -0.19>,< 0.19, Y, 0.19>,0.03 }
   #end  
-  pigment { color White }
+  texture { DoorTexture }
 }
 
 #declare Tiles[60][0][0] = union { // up
@@ -231,11 +320,9 @@
 }
 
 #declare Tiles[62][0][0] = union { // down
-  object { Ceiling }
   object { Ladder }
 }
 #declare Tiles[62][0][1] = union { // down
-  object { Ceiling }
   object { Ladder }
 }
   
