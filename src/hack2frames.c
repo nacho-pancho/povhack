@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <tty.h>
 #include <stdlib.h>
+#include <string.h>
 
 void dump_frame ( tty vt, int cursor_x, int cursor_y );
 
-void write_frame ( const char* prefix, tty vt, int idx, int cursor_x, int cursor_y, int dir );
+void write_frame ( const char* prefix, tty vt, int idx, int cursor_x, int cursor_y, int dir, char* motion );
 int capture_time ( int c, int* time );
 int detect_begin_frame ( int c );
 void fix_cursor ( tty vt, int* cx, int * cy );
 char get_direction ( int cx, int cy );
+void tty_copyto(tty dest, tty src);
+void detect_motion(tty prev_vt, tty vt, char* motion);
 
 #define get( t, i, j ) ( ( t )->scr[ ( i ) * 80 + ( j ) ] )
 
@@ -16,6 +19,7 @@ int main ( int argc, char * argv[] ) {
     const char * ifname = NULL, * ofprefix = NULL;
     int cursor_x = 0, cursor_y = 0;
     FILE * inf = NULL;
+    char motion[80*24];
 
     if ( argc < 3 ) {
         fprintf ( stderr, "usage: %s <vt100dump> <frame-prefix>\n", argv[ 0 ] );
@@ -31,7 +35,8 @@ int main ( int argc, char * argv[] ) {
     //
     // prepare TTY info
     //
-    tty vt = tty_init ( 80, 24, 1 ); // 80x21, resizable
+    tty vt = tty_init ( 80, 24, 1 ); // 80x21, not resizable
+    tty prev_vt = tty_init ( 80, 24, 1 ); // 80x21, not resizable
     inf = fopen ( ifname, "r" );
     //
     // detect first frame: last thing to be printed is status bar, ending with T:N
@@ -70,7 +75,9 @@ int main ( int argc, char * argv[] ) {
                 }
                 printf ( "direction: %c\n", dir );
                 //dump_frame(vt,cursor_x,cursor_y);
-                write_frame ( ofprefix, vt, time, cursor_x, cursor_y, dir );
+		detect_motion(prev_vt, vt, motion);
+                write_frame ( ofprefix, vt, time, cursor_x, cursor_y, dir, motion );
+		tty_copyto(prev_vt,vt);
                 frame++;
                 save_frame = 0;
             }
@@ -82,6 +89,7 @@ int main ( int argc, char * argv[] ) {
     printf ( "processed %d frames\n", frame );
     fclose ( inf );
     tty_free ( vt );
+    tty_free ( prev_vt );
     exit ( 0 );
 }
 
@@ -166,7 +174,7 @@ void dump_frame ( tty vt, int cx, int cy ) {
     printf ( "\n" );
 }
 
-void write_frame ( const char* prefix, tty vt, int idx, int cx, int cy, int dir ) {
+void write_frame ( const char* prefix, tty vt, int idx, int cx, int cy, int dir, char* motion ) {
     char tmp[ 512 ];
     FILE* outf;
     snprintf ( tmp, 512, "%s_%05d.tty", prefix, idx );
@@ -182,6 +190,9 @@ void write_frame ( const char* prefix, tty vt, int idx, int cx, int cy, int dir 
         }
         fputc ( '\n', outf );
     }
+    //
+    // attributes
+    // 
     for ( int i = 1 ; i < m ; ++i ) {
         for ( int j = 0 ; j < n ; ++j ) {
             const int k = i * n + j;
@@ -198,7 +209,16 @@ void write_frame ( const char* prefix, tty vt, int idx, int cx, int cy, int dir 
         }
         fputc ( '\n', outf );
     }
-    // last char is direction
+    //
+    // motion
+    // 
+    for ( int i = 1 ; i < m ; ++i ) {
+        for ( int j = 0 ; j < n ; ++j ) {
+            fputc ( motion[i*80+j], outf ); 
+        }
+        fputc ( '\n', outf );
+    }
+     // last char is direction
     fputc ( dir, outf );
     fputc ( '\n', outf );
     fclose ( outf );
@@ -240,4 +260,84 @@ char get_direction ( int cx, int cy ) {
     cx0 = cx;
     cy0 = cy;
     return res;
+}
+
+
+void tty_copyto(tty dest, tty src) {
+  attrchar* dest_scr = dest->scr;
+  memcpy(dest,src,sizeof(struct tty));
+  // recover pointer to buffer
+  dest->scr = dest_scr;
+  memcpy(dest->scr,src->scr,sizeof(attrchar)*src->sx*src->sy);
+}
+
+void detect_motion(tty prev_vt, tty vt, char* motion) {
+  memset(motion,32,80*24*sizeof(char));
+  // motion is stored in a printable char: there are 25 possible movements
+  // written using letters from A to Y
+  // the character is computed as:  'A' + 5*(2+dy) + (2+dx)
+  // where -2 <= dx,dy <= 2
+  for (int i = 1; i < 22; ++i) {
+    for (int j = 0; j < 80; ++j) {
+      attrchar target = get(vt,i,j);
+      attrchar prev   = get(prev_vt,i,j);
+      int found = 0, di_found = -10, dj_found = -10;
+      if ((target.ch == ' ') || 
+          (target.ch == '#') || 
+	  (target.ch == '.') || 
+	  (target.ch == '|') || 
+	  (target.ch == '-') || 
+	  (target.ch == '>') || 
+	  (target.ch == '<') || 
+	  (target.ch == '{') || 
+	  (target.ch == '+'))  {
+	motion[i*80+j] = '.';
+	continue;
+      } 
+      if (target.ch == prev.ch) {
+	di_found = dj_found = 0;
+	found = 1;
+      }
+      // first radius
+      int di0 = i > 0 ?  -1: 0;
+      int di1 = i < 21 ? +1: 0;
+      int dj0 = j > 0 ?  -1: 0;
+      int dj1 = j < 79 ? +1: 0;
+      if (!found) {
+	for (int di = -di0; !found && (di <= di1); ++di) {
+          for (int dj = -dj0; (dj <= dj1); ++dj) {
+            prev = get(prev_vt,i+di,j+dj);
+	    if (target.ch == prev.ch) {
+	      di_found = di;
+	      dj_found = dj;
+	      found = 1;
+	      break;
+	    }
+	  }
+        }	
+      }
+      // wasteful and redundant (we already cheched radius 1), but easy
+      if (!found) {
+        di0 = i > 1 ?  -2: 0;
+        di1 = i < 20 ? +2: 0;
+        dj0 = j > 1 ?  -2: 0;
+        dj1 = j < 78 ? +2: 0;
+        for (int di = di0; !found && (di <= di1); ++di) {
+          for (int dj = dj0; (dj <= dj1); ++dj) {
+            prev = get(prev_vt,i+di,j+dj);
+	    if (target.ch == prev.ch) {
+	      di_found = di;
+	      dj_found = dj;
+	      found = 1;
+	      break;
+	    }
+          }
+        }
+      }
+      if (!found) {      
+	di_found = dj_found = 0;
+      }
+      motion[i*80+j] = 'A' + 5*(2+di_found) + (2+dj_found); // didn't move
+    }
+  }
 }
