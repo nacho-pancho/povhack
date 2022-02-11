@@ -2,52 +2,28 @@
 #include <tty.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+//#include <ctype.h>
 #include <math.h>
-#include <argp.h>
+//#include <argp.h>
 #include "logging.h"
 #include "frame.h"
 #include "options.h"
 #include "vt100.h"
+#include "nethack.h"
 
-//
-// NetHack TileData command info
-//
-#define NH_CMD_START_GLYPH    0
-#define NH_CMD_END_GLYPH      1
-#define NH_CMD_SELECT_WINDOW  2
-#define NH_CMD_END_FRAME      3
-
-#define is_style_cmd(v) (((v)->cmd == 'm')) // officially known as 'Select Graphic Rendition' (SGR)
-#define is_nh_cmd(v) (((v).cmd == VT_CMD_TILEDATA))
-#define is_start_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_START_GLYPH))
-#define is_end_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_GLYPH))
-#define is_end_frame(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_FRAME))
-
-#define FLAG_CORPSE        0x0001
-#define FLAG_INVISIBLE     0x0002
-#define FLAG_DETECTED      0x0004
-#define FLAG_PET           0x0008
-#define FLAG_RIDDEN        0x0010
-#define FLAG_STATUE        0x0020
-#define FLAG_PILE          0x0040
-#define FLAG_LAVA_HILIGHT  0x0080
-#define FLAG_ICE_HILIGHT   0x0100
-#define FLAG_OUT_OF_SIGHT  0x0200
-#define FLAG_UNEXPLORED    0x0400
-#define FLAG_FEMALE        0x0800
-#define FLAG_BADCOORDS     0x1000
-
-
-
-//
-// Nethack uses colors 0-7 combined with bold to form its 16 color palette
-// 
 
 void detect_motion(frame_t* frame, const frame_t* prev_frame);
-vt_command_t* intercept_command(int c);
+
 void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
-void frame_to_pov(const frame_t* frame, const config_t* cfg, FILE* outf );
+
+/**
+ * most important function of this program
+ */
+void frame_to_pov(const frame_t* prev_frame,
+		  const frame_t* curr_frame,
+		  const config_t* cfg,
+		  double time,
+		  FILE* outf );
 //
 // macros to avoid stupid errors
 // 
@@ -65,7 +41,7 @@ int main ( int argc, char * argv[] ) {
     //
     inf = fopen ( cfg.input_file, "r" );
     if (!inf) {
-      fprintf(stderr,"could ont open file %s for reading.\n",cfg.input_file);
+      fprintf(stderr,"could not open file %s for reading.\n",cfg.input_file);
       exit(1);
     }
     //
@@ -83,7 +59,8 @@ int main ( int argc, char * argv[] ) {
     frame_reset(prev_frame);
     
     
-    int nframes = 0;
+    int game_frame = 0;
+    int video_frame = 0;
     while ( !feof ( inf ) ) {
       //
       // intercept NetHack output
@@ -108,7 +85,7 @@ int main ( int argc, char * argv[] ) {
 	  // capture hero position
 	  frame->hero_i = vt->cy;
 	  frame->hero_j = vt->cx;
-	  frame->number = nframes;
+	  frame->number = game_frame;
 	  // copy vt100 data to frame
 	  tty_to_frame(vt,frame);
 	  // detect changes
@@ -117,25 +94,28 @@ int main ( int argc, char * argv[] ) {
 	    detect_motion(frame,prev_frame);
 	    //printf("*** vt dump:\n");
 	    //tty_dump(vt);
-	    FILE* fout;
 	    
-	    printf("*** frame dump:\n");
-	    //snprintf(ofname,127,"%s_%06d.dbg",ofprefix,nframes);
-	    //fout = fopen(ofname,"w");
+	    FILE* fout = NULL;
+	    snprintf(ofname,127,"%s_%06d.dbg",cfg.output_prefix,game_frame);
+	    fout = fopen(ofname,"w");
 	    frame_dump(frame,fout);
-	    //fclose(fout);
+	    fclose(fout);
 	    
-	    snprintf(ofname,127,"%s_%06d.frm",cfg.output_prefix,nframes);
+	    snprintf(ofname,127,"%s_%06d.frm",cfg.output_prefix,game_frame);
 	    fout = fopen(ofname,"w");
 	    frame_write(frame,fout);
 	    fclose(fout);
 	    // save frame
-	    snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,nframes);
-	    fout = fopen(ofname,"w");
-	    frame_to_pov(frame,&cfg,fout);
-	    fclose(fout);
+	    for (int i = 1; i <= cfg.subframes; ++i) {
+	      const double T = (double) i / (double)cfg.subframes;
+	      snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,video_frame);
+	      fout = fopen(ofname,"w");
+	      frame_to_pov(prev_frame,frame,&cfg,T, fout);
+	      fclose(fout);
+	      video_frame++;
+	    }
 	    // save as previous frame
-	    nframes++;
+	    game_frame++;
 	  } else {
 	  }
 	  // reset frame
@@ -148,58 +128,13 @@ int main ( int argc, char * argv[] ) {
       //
       tty_write ( vt, ( char* ) &c, 1 );
     }
-    printf ( "processed %d frames\n", nframes );
+    printf ( "processed %d game frames\n", game_frame );
+    printf ( "wrote %d video frames\n", video_frame );
     fclose ( inf );
     tty_free ( vt );
     frame_free ( prev_frame );
     frame_free (frame);
     exit ( 0 );
-}
-
-//------------------------------------------------------------
-
-/**
- * returns 0 if no command was detected
- * otherwise returns a pointer to the second argument
- */
-vt_command_t* intercept_command(int c) {
-  static vt_command_t cmd;
-  static int c1 = 0, c0 = 0;
-  static int within_command = 0;
-  static int parval;
-  // update state
-  c1 = c0; c0 = c;
-  if (!within_command) {
-    if ((c1 == ESC_CHAR) && (c0 == BEGIN_CHAR)) {
-      within_command = 1;
-      cmd.cmd = 0;
-      cmd.npar = 0;
-      parval = 0;
-    }
-    return 0;
-  } else { // within command
-    if ( isalpha(c) ) { // end of command
-      cmd.par[cmd.npar++] = parval; 
-      cmd.cmd = c;
-      within_command = 0;
-      return &cmd;
-    } else if (c == ';') {
-      cmd.par[cmd.npar++] = parval;
-      parval = 0;
-      return 0;
-    } else if ( isdigit(c)) { 
-      parval = parval*10 + c-'0'; // update param value
-      return 0;
-    } else if (c == '?') {
-      // ignore extended command
-      within_command = 0;
-      return 0;
-    } else {
-      fprintf(stderr,"not a valid ANSI command.! Offending character is %c (%d), context c1 %c\n",c,c,c1);
-      within_command = 0;
-      return 0;
-    }
-  }
 }
 
 //------------------------------------------------------------
@@ -231,6 +166,19 @@ void apply_style(vt_command_t* vtc, glyph_t* glyph) {
   }
 }
 
+
+//------------------------------------------------------------
+#include <ctype.h>
+
+int is_monster(char c) {
+  char monsters[] = {'~','&','\'',':',';','@',0};
+  if (isalpha(c)) return 1;
+  for (int i = 0; monsters[i] != 0; ++i) {
+    if (c == monsters[i]) return 1;
+  }
+  return 0;
+}
+
 //------------------------------------------------------------
 
 void detect_motion(frame_t* frame, const frame_t* prev_frame) {
@@ -243,22 +191,15 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
     for (int j = 0; j < 80; ++j) {
       glyph_t* target = &frget(frame,i,j);
       const glyph_t* prev   = &frget(prev_frame,i,j);
-      int tc = target->ascii;
+      char tc = target->ascii;
       int tg = target->code;
-      target->dx = target->dy = 0;
 
       int found = 0;
       // these don't move
-      if ((tc == ' ') || 
-          (tc == '#') || 
-	  (tc == '.') || 
-	  (tc == '|') || 
-	  (tc == '-') || 
-	  (tc == '>') || 
-	  (tc == '<') || 
-	  (tc == '{') || 
-	  (tc == '+') ||
-	  (tg == 0))  {
+      if (!is_monster(tc)) {
+	target->dx = 0;
+	target->dy = 0;
+	target->tele = 0;
 	continue;
       }
       //
@@ -266,6 +207,9 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
       // this is more robust than chars
       //
       if (tg == prev->code) {
+	target->dx = 0;
+	target->dy = 0;
+	target->tele = 0;
 	continue;
       }
       
@@ -280,6 +224,7 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	  if (tg == prev->code) {
 	    target->dy = -di;
 	    target->dx = -dj;
+	    target->tele = 0;
 	    found = 1;
 	    break;
 	  }
@@ -299,11 +244,16 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	  if (tg == prev->code) {
 	    target->dy = -di;
 	    target->dx = -dj;
+	    target->tele = 0;
 	    found = 1;
 	    break;
 	  }
 	}
       } // radius 2 search
+      //
+      // where is this guy?
+      // likely teleported
+      target->tele = 1;
     } // for each col
   } // for each row
 } // end search
@@ -324,52 +274,105 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 //#define FLAG_FEMALE        0x0800
 //#define FLAG_BADCOORDS     0x1000
 
-void frame_to_pov(const frame_t* frame, const config_t* cfg, FILE* outf ) {
-    const double h = 1;
-    fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
-    static double prev_dx = 0, prev_dy = 0;
-    for ( int i = 1 ; ( i < 22 ) ; ++i ) {
+//static char unmovable[] = {' ','#','.','|','-','+','%','>','<','{','_','}','\\','/','^','[',']','0','`','$','%','*','(',')','?','!',0};
+
+//#define NH_STRUCTURE
+//#define NH_DUNGEON
+//#define NH_ITEM
+
+
+void frame_to_pov(const frame_t* prev_frame,
+		  const frame_t* curr_frame,
+		  const config_t* cfg,
+		  double T,
+		  FILE* outf ) {
+
+  fprintf ( outf, "#declare GameFrame = %d;\n", curr_frame->number );
+  fprintf ( outf, "#declare GameSubFrame = %f;\n", T );
+  fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
+
+  static double prev_hero_x, prev_hero_y;
+  for ( int i = 1 ; ( i < 22 ) ; ++i ) {
         for ( int j = 0 ; j < NH_COLS ; ++j ) {
-	  glyph_t* g = &frget(frame,i,j);
-	  uint16_t flags = g->flags;
-	  char chr = g->ascii;
-          fprintf ( outf, " object { Tiles[%d][%d] ", chr, g->color);
-	  // perhaps rotate
-	  if ((g->dy != 0) || (g->dx != 0)) {
-	    double angle = 90-(180.0/M_PI)*atan2f(g->dy, g->dx);
-	    fprintf( outf, " rotate %f*y ", angle );
-	  }
-	  fprintf( outf, " translate <%3d,  0,%3d> }\n", j, (20 - i));
+	  glyph_t* g0    = &frget(prev_frame,i,j);
+	  glyph_t* g1    = &frget(curr_frame,i,j);
+	  uint16_t flags = g1->flags;
+	  char     chr   = g1->ascii;
+	  char     color = g1->color;
+	  // floor
+	  double cx = j;
+	  double cy = 20 - i;
+	  // it's our hero!
 	  if (chr != '>') { // if ladder down, don't put a floor
- 	    fprintf( outf, " object {Floor ");
-	    fprintf( outf, " translate <%3d,  0,%3d> }\n", j, (20 - i));
+ 	    fprintf( outf, "object { Floor ");
+	    fprintf( outf, " translate <%5f,  0,%5f> }\n", cx, cy);
+	  }
+	  // ceiling
+	  if (chr != '<') { // if ladder up, don't put a ceiling
+ 	    fprintf( outf, "object { Ceiling ");
+	    fprintf( outf, " translate <%5f,  0,%5f> }\n", cx, cy);
+	  }
+	  // thing	 
+          fprintf ( outf, "object { Tiles[%d][%d]\n", chr, color);
+	  if (!is_monster(chr)) {
+	    // monsters don't move
+	    fprintf( outf, " translate <%5f,  0,%5f>\n}\n", cx, cy);
+	  }  else {
+	    //
+	    // monsters can move
+	    //
+	    const double dx0 = g0->dx;
+	    const double dy0 = g0->dy;
+	    const double dx1 = g1->dx;
+	    const double dy1 = g1->dy;
+
+	    // interpolated speed is only for computing the rotation angle
+	    const double dx = (1.0-T)*dx0 + T*dx1;
+	    const double dy = (1.0-T)*dy0 + T*dy1;
+	    
+	    double angle = 90-(180.0/M_PI)*atan2f(dy, dx);
+	    fprintf( outf, " rotate %5f*y\n", angle );
+	    // when T < 1, we are showing the frames between the previous and
+	    // the current. Thus we need to displace the glyph *backwards* 
+	    // according to current speed and position
+	    if (!g1->tele) {
+	      // smooth movement
+	      cx -= (1.0-T)*dx1;
+	      cy -= (1.0-T)*dy1;
+	    } else {
+	      // the guy teleported
+	      angle = 0;
+	    }
+	    fprintf( outf, " translate <%5f,  0,%5f>\n}\n", cx, cy);
+	    if ((i == curr_frame->hero_i) && (j == curr_frame->hero_j)) { // is this our hero??
+	      double camx, camy;
+	      if (!g1->tele) {
+		camx = prev_hero_x;
+		camy = prev_hero_y;
+	      } else {
+		// the guy likely teleported
+		// default camera a little behind the guy
+		camx = cx;
+		camy = cy - 0.2;
+	      }
+	      prev_hero_x = cx;
+	      prev_hero_y = cy;
+	      //
+	      // this is our hero!
+	      // lights and cameras please
+	      //
+	      fprintf ( outf, "light_source { GlobalLight translate %5f*x+%5f*z }\n", camx, camy );
+	      fprintf ( outf, "light_source { LocalLight  translate %5f*x+%5f*z }\n", cx, cy);
+	      fprintf ( outf, "camera {\n" );
+	      fprintf ( outf, "  perspective\n" );
+	      fprintf ( outf, "  right (1920/1080)*x\n" );
+	      fprintf ( outf, "  sky y\n" );
+	      fprintf ( outf, "  location <%5f,CameraHeight,%5f> \n", camx, camy);
+	      fprintf ( outf, "  look_at  <%5f,CameraHeight,%5f>\n", cx,  cy );
+	      fprintf ( outf, "}\n" );
+	    }
 	  }
         }
     }
-    double cx = frame->hero_j;
-    double cy = frame->hero_i;
-    glyph_t hero_data = frget(frame,frame->hero_i,frame->hero_j);
-    double dx = hero_data.dx;
-    double dy = hero_data.dy;
-    if ((dx == 0) && (dy == 0)) {
-      prev_dx *= 0.5;
-      prev_dy *= 0.5;
-      dx = prev_dx;
-      dy = prev_dy;
-    } else {
-      prev_dx = dx;
-      prev_dy = dy;
-    }
-    fprintf ( outf, "light_source { GlobalLight translate %f*x+%f*z }\n", cx, 20 - cy );
-    //fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Green} finish {ambient 1} no_shadow translate %d*x+%d*z }\n", cx, 20 - cy );
-    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dx, 20 - cy - 0.1 * dy );
-    //fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Blue}  finish {ambient 1} no_shadow translate %f*x+%f*z }\n", cx + 0.1 * dx, 20 - cy - 0.1 * dy );
-    fprintf ( outf, "camera {\n" );
-    fprintf ( outf, "  perspective\n" );
-    fprintf ( outf, "  right (1920/1080)*x\n" );
-    fprintf ( outf, "  sky y\n" );
-    fprintf ( outf, "  location <%f,%f,%f> \n", cx - h * dx, 2 * h, 20 - cy + h * dy );
-    fprintf ( outf, "  look_at  <%f,0.5,%f>\n", cx, 20 - cy );
-    fprintf ( outf, "}\n" );
 
 }

@@ -7,6 +7,7 @@ static struct argp_option options[] = {
     {"quiet",          'q', 0, OPTION_ARG_OPTIONAL, "Don't produce any output", 0 },
     {"prefix",         'o', "path",    0, "output file prefix", 0 },
     {"tileset",        't', "path",    0, "input file", 0 },
+    {"subframe",        'r', "int",    0, "number of video frames between game frames", 0 },
     { 0 } // terminator
 };
 
@@ -31,6 +32,9 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
     case 't':
         cfg->tileset_file = arg;
         break;
+    case 'r':
+      cfg->subframes = atoi(arg);
+        break;
 
     case ARGP_KEY_ARG:
         switch ( state->arg_num ) {
@@ -53,7 +57,7 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
         break;
 
     default:
-      return 1;
+        return ARGP_ERR_UNKNOWN;
     }
     return 0;
 }
@@ -61,17 +65,18 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
 /**
  * argp configuration structure
  */
+static const char args_doc[]    = ARGS_DOC;
+static const char program_doc[] = PROGRAM_DOC;
+
+static struct argp argp = { options, _parse_opt, args_doc, program_doc, 0, 0, 0 };
 
 config_t parse_opt ( int argc, char* * argv ) {
 
     config_t cfg;
-    const char args_doc[]    = ARGS_DOC;
-    const char program_doc[] = PROGRAM_DOC;
-    
-    struct argp argp = { options, _parse_opt, args_doc, program_doc, 0, 0, 0 };
-    cfg.input_file  = NULL;
+    cfg.subframes = 1;
+    cfg.input_file    = NULL;
     cfg.output_prefix = "out_";
-    cfg.tileset_file = "tileset.pov";
+    cfg.tileset_file  = "tileset.pov";
     argp_parse ( &argp, argc, argv, 0, 0, &cfg );
 
     return cfg;

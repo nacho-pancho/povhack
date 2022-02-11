@@ -10,6 +10,7 @@ typedef struct {
   char color;     // color code (16 values) 
   char dx;        // horizontal displacement w.r.t. previous frame
   char dy;        // horizontal displacement w.r.t. previous frame
+  char tele  ;    // jumped abruptly
 } glyph_t;        // nethack pixel :)
 
 void reset_glyph(glyph_t* g);

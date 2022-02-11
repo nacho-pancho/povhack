@@ -1,4 +1,5 @@
 #include "vt100.h"
+#include <ctype.h>
 
 // these are the attribute flags defined in tty.h
 // 
@@ -16,6 +17,50 @@
 //#define VT100_ATTR_INVERSE      0x0400000000000000
 //#define VT100_ATTR_BLINK        0x0800000000000000
 //#define VT100_ATTR_CJK          0x8000000000000000
+
+//------------------------------------------------------------
+
+vt_command_t* intercept_command(int c) {
+  static vt_command_t cmd;
+  static int c1 = 0, c0 = 0;
+  static int within_command = 0;
+  static int parval;
+  // update state
+  c1 = c0; c0 = c;
+  if (!within_command) {
+    if ((c1 == ESC_CHAR) && (c0 == BEGIN_CHAR)) {
+      within_command = 1;
+      cmd.cmd = 0;
+      cmd.npar = 0;
+      parval = 0;
+    }
+    return 0;
+  } else { // within command
+    if ( isalpha(c) ) { // end of command
+      cmd.par[cmd.npar++] = parval; 
+      cmd.cmd = c;
+      within_command = 0;
+      return &cmd;
+    } else if (c == ';') {
+      cmd.par[cmd.npar++] = parval;
+      parval = 0;
+      return 0;
+    } else if ( isdigit(c)) { 
+      parval = parval*10 + c-'0'; // update param value
+      return 0;
+    } else if (c == '?') {
+      // ignore extended command
+      within_command = 0;
+      return 0;
+    } else {
+      fprintf(stderr,"not a valid ANSI command.! Offending character is %c (%d), context c1 %c\n",c,c,c1);
+      within_command = 0;
+      return 0;
+    }
+  }
+}
+
+//------------------------------------------------------------
 
 char vtattr_to_color(uint64_t attr) {
   return (attr & VT100_ATTR_BOLD) ?  (attr & 0x07) : (attr & 0x07) + 8;

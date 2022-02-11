@@ -27,6 +27,7 @@ void frame_reset(frame_t* f) {
     f->glyphs[i].color = 0;
     f->glyphs[i].dx    = 0;
     f->glyphs[i].dy    = 0;
+    f->glyphs[i].tele  = 1;
     f->message[0] = 0;
     f->status1[0] = 0;
     f->status2[0] = 0;
@@ -92,6 +93,7 @@ static void vruler(int i, FILE* out) {
 //------------------------------------------------------------
 
 void frame_dump(frame_t* frame, FILE* out) {
+  if (!out) return;
   char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // ascii
   glyph_t* g = frame->glyphs;

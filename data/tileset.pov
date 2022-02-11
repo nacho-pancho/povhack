@@ -12,7 +12,9 @@
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
-
+#declare TileSize      = 0.5;
+#declare CameraHeight  = 0.7; 
+#declare CameraDistance = 1;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
 
@@ -77,7 +79,8 @@
   
 #declare FloorTexture = texture {
   pigment {
-    crackle color_map{[0.0 0.2*White][1.0 0.5*White]}
+    //crackle color_map{[0.0 0.2*White][1.0 0.5*White]}
+    crackle color_map{[0.0 0.2*White][0.1 0.2*White][0.3 0.5*White][1.0 0.5*White]}
   }
   normal { crackle 1.6 }
   scale <0.1,0.05,0.1>
@@ -110,11 +113,10 @@
   texture { HallwayTexture }
 }
 
-#declare Ceiling = sphere {<0,0,0>,0 } 
-  // box { <-0.51,RoomHeight,-0.51>,<-0.51,RoomHeight+0.01,0.51>
-//  pigment { color 0.2*White }  // floor
-//}
-
+#declare Ceiling =  box {
+  <-0.51,RoomHeight,-0.51>,<0.51,RoomHeight+0.01,0.51>
+  texture { WallTexture }
+}
 // 
 // torch carried by our hero
 //
@@ -169,13 +171,13 @@
 //
 #declare Tiles = array[127][16];
 
-
 #for (code,32,126) //127 not inc
   #for (col,0,15) 
     #declare BaseTile = text { 
       ttf TileFont chr(code) TileThickness, TileShift 
-      texture { TileTexture pigment { ANSIColors[col] } }
-      translate 0.25*y-0.25*x-0.5*TileThickness*z
+      texture { TileTexture pigment { ANSIColors[col] } }      
+      translate <-0.25, 0.25, 0.5*TileThickness>
+      scale TileSize
     }
     #declare Tiles[code][col] = BaseTile
    #end
@@ -212,7 +214,8 @@
 #declare Avatar = text { 
   ttf TileFont "@" TileThickness, TileShift 
   texture { TileTexture pigment { ANSIColors[15] } }
-  translate 0.25*y-0.25*x-0.5*TileThickness*z
+  translate <-0.25,0.25,-0.5*TileThickness>
+  scale TileSize
 }
 
 #declare Tiles[64][7] = Avatar

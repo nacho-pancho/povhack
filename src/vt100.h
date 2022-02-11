@@ -22,6 +22,8 @@ typedef struct {
 
 #define is_cmd(v) ( v != 0 && isalpha((v)->cmd))
 
+vt_command_t* intercept_command(int c);
+
 char vtattr_to_color(uint64_t attr);
 
 void tty_dump(tty vt, FILE* out);
