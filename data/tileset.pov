@@ -166,7 +166,7 @@
 // the user may override any particular tile with any object
 // (first 33 elements are not used)
 //
-#declare Tiles = array[127][16][2];
+#declare Tiles = array[127][16];
 
 
 #for (code,32,126) //127 not inc
@@ -176,14 +176,8 @@
       texture { TileTexture pigment { ANSIColors[col] } }
       translate 0.25*y-0.25*x-0.5*TileThickness*z
     }
-    #declare Tiles[code][col][0] = union {
+    #declare Tiles[code][col] = union {
       object { Floor } 
-      object { BaseTile }
-    }
-    // inverse color
-    // we put a bright floor tile underneath
-    #declare Tiles[code][col][1] = union {
-      object { Floor }
       object { BaseTile }
     }
    #end
@@ -208,15 +202,12 @@
 //
 // void / unknown
 //
-#declare Tiles[32][0][0] = box { 
+#declare Tiles[32][0] = box { 
   Wall
   finish { ambient 0 }
 }
-
-#declare Tiles[32][0][1] = box { 
-  Wall
-  finish { ambient 0 }
-}
+#declare Tiles[32][7] = Tiles[32][0];
+#declare Tiles[32][8] = Tiles[32][0];
 //
 // avatar
 //
@@ -225,36 +216,31 @@
   texture { TileTexture pigment { ANSIColors[15] } }
   translate 0.25*y-0.25*x-0.5*TileThickness*z
 }
-#declare Tiles[64][7][0] = union { object { Floor } object {Avatar rotate Angle*y } }
-#declare Tiles[64][0][1] = union { object { Floor } object {Avatar rotate Angle*y} }
-#declare Tiles[64][7][1] = union { object { Floor } object {Avatar rotate Angle*y} }
+
+#declare Tiles[64][7] = union { object { Floor } object {Avatar } }
+#declare Tiles[64][8] = union { object { Floor } object {Avatar } }
 //
 // hallway floor
 //
-#declare Tiles[35][0][0] = Hallway
-#declare Tiles[35][0][1] = Tiles[35][0][0]
-#declare Tiles[35][7][0] = Tiles[35][0][0]
-#declare Tiles[35][7][1] = Tiles[35][0][0]
+#declare Tiles[35][0] = Hallway
+#declare Tiles[35][8] = Hallway
+#declare Tiles[35][7] = Hallway
 //
 // room floor
 //
-#declare Tiles[46][0][0] = Floor
-
-#declare Tiles[46][0][1] = Floor
+#declare Tiles[46][0] = Floor
+#declare Tiles[46][7] = Floor
+#declare Tiles[46][8] = Floor
 
 //
 // vertical walls
 //
-#declare Tiles[124][0][0] = box { 
-  Wall
-}
-
-#declare Tiles[124][0][1] = box { 
-  Wall
-}
+#declare Tiles[124][0] = box { Wall }
+#declare Tiles[124][7] = box { Wall }
+#declare Tiles[124][8] = box { Wall }
 
 // open horizontal door
-#declare Tiles[124][3][0] = union {
+#declare Tiles[124][3] = union {
   object { Floor } 
   box { 
     <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5>
@@ -262,42 +248,28 @@
     texture { DoorTexture }
 }
 
-#declare Tiles[124][3][1] = Tiles[124][3][0]
-
 ///
 // horizontal walls
 //
-#declare Tiles[45][0][0] = box { 
-  Wall
-}
-
-#declare Tiles[45][0][1] = box { 
-  Wall
-}
+#declare Tiles[45][0] = box {  Wall }
+#declare Tiles[45][7] = box {  Wall }
+#declare Tiles[45][8] = box {  Wall }
 
 // open vertical door
-#declare Tiles[45][3][0] = union { 
+#declare Tiles[45][3] = union { 
   object { Floor } 
   box { 
     <-0.51,0.0,-0.51>,<0.51,RoomHeight,-0.41>
     texture { DoorTexture }
   }
 }
-#declare Tiles[45][3][1] = union { 
-  object { Floor } 
-  box { 
-    <-0.51,0.0,-0.51>,<0.51,RoomHeight,-0.41>
-    pigment { color Orange }  // this is an open Door, put a wood texture here
-  }
-}
 ///
 // closed door (+)
 //
-#declare Tiles[43][3][0] = box { // closed door
+#declare Tiles[43][3] = box { // closed door
   <-0.5,0.0,-0.5>,<0.5,RoomHeight,0.5>
   texture { DoorTexture }
 }
-#declare Tiles[43][3][1] = Tiles[43][3][0]
 
 
 #declare Ladder = union {
@@ -310,21 +282,16 @@
   texture { DoorTexture }
 }
 
-#declare Tiles[60][0][0] = union { // up
+#declare Tiles[60][7] = union { // up
   object { Floor }
   object { Ladder }
 }
-#declare Tiles[60][0][1] = union { // up
-  object { Floor }
-  object { Ladder }
-}
+#declare Tiles[60][8] = Tiles[60][7]
+#declare Tiles[60][0] = Tiles[60][7]
 
-#declare Tiles[62][0][0] = union { // down
-  object { Ladder }
-}
-#declare Tiles[62][0][1] = union { // down
-  object { Ladder }
-}
+#declare Tiles[62][0] = Ladder
+#declare Tiles[62][7] = Ladder
+#declare Tiles[62][8] = Ladder
   
 
 global_settings { ambient_light 0.1*White }

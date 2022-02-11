@@ -128,6 +128,7 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame);
 vt_command_t* intercept_command(int c);
 void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
 
+void frame_to_pov(const frame_t* frame, FILE* outf, const char* tfname);
 //
 // macros to avoid stupid errors
 // 
@@ -215,7 +216,6 @@ int main ( int argc, char * argv[] ) {
 	  tty_to_frame(vt,frame);
 	  // detect changes
 	  if (frame_changed(frame,prev_frame)) {
-	    printf("frame changed\n");
 	    // detect motion
 	    detect_motion(frame,prev_frame);
 	    //printf("*** vt dump:\n");
@@ -229,13 +229,15 @@ int main ( int argc, char * argv[] ) {
 	    // save frame
 	    snprintf(ofname,127,"%s_%06d.pov",ofprefix,nframes);
 	    fout = fopen(ofname,"w");
+	    frame_to_pov(frame,fout,tfname);
 	    fclose(fout);
 	    // save as previous frame
+	    nframes++;
+	  } else {
 	  }
 	  // reset frame
 	  frame_copy(prev_frame,frame);
 	  frame_reset(frame);
-	  nframes++;
 	}
       }
       //
@@ -608,7 +610,7 @@ void frame_copy(frame_t* dst, const frame_t* src) {
 int frame_changed(const frame_t* a, const frame_t* b) {
   if (a->hero_i != b->hero_i) return 1;
   if (a->hero_j != b->hero_j) return 1;
-  return memcmp(a->glyphs,b->glyphs,sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  return memcmp(a->glyphs+NH_COLS,b->glyphs+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4));
 }
 
 //------------------------------------------------------------
@@ -642,10 +644,8 @@ void tty_to_frame(tty vt, frame_t* frame) {
 
 //------------------------------------------------------------
 
-void frame_to_pov(const frame_t* frame, const char* ofname, const char* tfname) {
+void frame_to_pov(const frame_t* frame, FILE* outf, const char* tfname) {
     const int h = 2;
-    FILE* outf;
-    outf = fopen ( ofname, "w" );
     fprintf ( outf, "#include \"%s\"\n", tfname );
     
     for ( int i = 1 ; ( i < 22 ) ; ++i ) {
@@ -655,10 +655,10 @@ void frame_to_pov(const frame_t* frame, const char* ofname, const char* tfname) 
 		    g->ascii, g->color );
 	  if ((g->dy != 0) || (g->dx != 0)) {
 	    double angle = -(180.0/M_PI)*atan2f(g->dy, g->dx);
-	    fprintf( outf, "\trotate %f*y\n", angle );
+	    fprintf( outf, " rotate %f*y ", angle );
 	  }
-	  fprintf( outf, "\ttranslate <%3d,  0,%3d>\n", j, (20 - i));
-	  fprintf( outf, "\n");
+	  fprintf( outf, " translate <%3d,  0,%3d>", j, (20 - i));
+	  fprintf( outf, " }\n");
         }
     }
     int cx = frame->hero_j;
@@ -666,15 +666,16 @@ void frame_to_pov(const frame_t* frame, const char* ofname, const char* tfname) 
     glyph_t hero_data = frget(frame,frame->hero_i,frame->hero_j);
     int dirx = hero_data.dx;
     int diry = hero_data.dy;
-    fprintf ( outf, "light_source { GlobalLight translate %d*x+%d*z }\n", cx, 21 - cy );
-    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dirx, 21 - cy - 0.1 * diry );
+    fprintf ( outf, "light_source { GlobalLight translate %d*x+%d*z }\n", cx, 20 - cy );
+    fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Green} finish {ambient 1} no_shadow translate %d*x+%d*z }\n", cx, 20 - cy );
+    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dirx, 20 - cy - 0.1 * diry );
+    fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Blue}  finish {ambient 1} no_shadow translate %f*x+%f*z }\n", cx + 0.1 * dirx, 20 - cy - 0.1 * diry );
     fprintf ( outf, "camera {\n" );
     fprintf ( outf, "  perspective\n" );
     fprintf ( outf, "  right (1920/1080)*x\n" );
     fprintf ( outf, "  sky y\n" );
-    fprintf ( outf, "  location <%d,%d,%d> \n", cx - h * dirx, 2 * h, 21 - cy + h * diry );
-    fprintf ( outf, "  look_at  <%d,0.5,%d>\n", cx, 21 - cy );
+    fprintf ( outf, "  location <%d,%d,%d> \n", cx - h * dirx, 2 * h, 20 - cy + h * diry );
+    fprintf ( outf, "  look_at  <%d,0.5,%d>\n", cx, 20 - cy );
     fprintf ( outf, "}\n" );
 
-    fclose ( outf );
 }
