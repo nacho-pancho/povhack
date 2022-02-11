@@ -9,9 +9,8 @@
 # for Ubuntu dapper.
 
 
-#PREFIX=/usr
-PREFIX=$(wildcard ~)/nh/install
-#PREFIX=/opt
+#PREFIX=$(wildcard ~)/nh/install
+PREFIX=/usr/local
 HACKDIR=$(PREFIX)/games/lib/$(GAME)dir
 SHELLDIR = $(PREFIX)/games
 INSTDIR=$(HACKDIR)
@@ -33,7 +32,7 @@ CFLAGS+=-DCURSES_GRAPHICS
 #CFLAGS+=-DEXTRA_SANITY_CHECKS
 #CFLAGS+=-DEDIT_GETLIN
 #CFLAGS+=-DSCORE_ON_BOTL
-#CFLAGS+=-DMSGHANDLER
+CFLAGS+=-DMSGHANDLER
 CFLAGS+=-DTTY_TILES_ESCCODES
 
 LINK=$(CC)
@@ -45,8 +44,8 @@ WINOBJ = $(WINTTYOBJ) $(WINCURSESOBJ)
 WINLIB = $(WINTTYLIB) $(WINCURSESLIB)
 
 # if TTY_TILES_ESCCODES
-#WINSRC += tile.c
-#WINOBJ += tile.o
+WINSRC += tile.c
+WINOBJ += tile.o
 
 WINTTYLIB=-lncurses -ltinfo
 
