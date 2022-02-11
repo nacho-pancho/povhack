@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define NH_COLS 80
 #define NH_ROWS 24
@@ -115,6 +116,8 @@ void frame_free(frame_t* f);
 void frame_reset(frame_t* f);
 void frame_copy(frame_t* dst, const frame_t* src);
 void frame_dump(frame_t* frame);
+void frame_write(frame_t* frame, FILE* out);
+int frame_changed(const frame_t* a, const frame_t* b);
 
 void tty_to_frame(tty vt, frame_t* frame);
 
@@ -130,6 +133,8 @@ void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
 // 
 #define vtget( t, i, j ) ( ( t )->scr[ ( i ) * NH_COLS + ( j ) ] )
 #define frget( t, i, j ) ( ( t )->glyphs[ ( i ) * NH_COLS + ( j ) ] )
+
+//------------------------------------------------------------
 
 int main ( int argc, char * argv[] ) {
     const char * ifname = NULL, * tfname, * ofprefix = NULL;
@@ -208,21 +213,31 @@ int main ( int argc, char * argv[] ) {
 	  frame->number = nframes;
 	  // copy vt100 data to frame
 	  tty_to_frame(vt,frame);
-	  // detect motion
-	  detect_motion(frame,prev_frame);
-	  //printf("*** vt dump:\n");
-	  //tty_dump(vt);
-	  //printf("*** frame dump:\n");
-	  //frame_dump(frame);
-	  // save frame
-	  snprintf(ofname,127,"%s_%06d.pov",ofprefix,nframes);
-	  // save as previous frame
-	  frame_copy(prev_frame,frame);
+	  // detect changes
+	  if (frame_changed(frame,prev_frame)) {
+	    printf("frame changed\n");
+	    // detect motion
+	    detect_motion(frame,prev_frame);
+	    //printf("*** vt dump:\n");
+	    //tty_dump(vt);
+	    printf("*** frame dump:\n");
+	    frame_dump(frame);
+	    snprintf(ofname,127,"%s_%06d.frm",ofprefix,nframes);
+	    FILE* fout = fopen(ofname,"w");
+	    frame_write(frame,fout);
+	    fclose(fout);
+	    // save frame
+	    snprintf(ofname,127,"%s_%06d.pov",ofprefix,nframes);
+	    fout = fopen(ofname,"w");
+	    fclose(fout);
+	    // save as previous frame
+	  }
 	  // reset frame
+	  frame_copy(prev_frame,frame);
 	  frame_reset(frame);
 	  nframes++;
 	}
-      } // is a command
+      }
       //
       // write to in-memory virtual terminal
       //
@@ -236,14 +251,7 @@ int main ( int argc, char * argv[] ) {
     exit ( 0 );
 }
 
-
-void tty_copyto(tty dest, tty src) {
-  attrchar* dest_scr = dest->scr;
-  memcpy(dest,src,sizeof(struct tty));
-  // recover pointer to buffer
-  dest->scr = dest_scr;
-  memcpy(dest->scr,src->scr,sizeof(attrchar)*src->sx*src->sy);
-}
+//------------------------------------------------------------
 
 /**
  * returns 0 if no command was detected
@@ -304,6 +312,9 @@ vt_command_t* intercept_command(int c) {
 //#define VT100_ATTR_BLINK        0x0800000000000000
 //#define VT100_ATTR_CJK          0x8000000000000000
 
+//------------------------------------------------------------
+
+
 void apply_style(vt_command_t* vtc, glyph_t* glyph) {
   uint64_t style_cmd = vtc->par[0];
   
@@ -330,6 +341,9 @@ void apply_style(vt_command_t* vtc, glyph_t* glyph) {
     break;
   }
 }
+
+//------------------------------------------------------------
+
 
 void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 
@@ -406,72 +420,24 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
   } // for each row
 } // end search
 
-void infer_direction(char dir, int* pdirx, int* pdiry, int* pangle) {
-    // infer direction of character
-    //
-    int dirx, diry;
-    int angle = 0;
-    switch ( dir ) {
-    case 'h':
-        dirx = -1;
-        diry =  0;
-        angle = -90;
-        break;
-    case 'j':
-        dirx =  0;
-        diry =  1;
-        angle = 180;
-        break;
-    case 'k':
-        dirx =  0;
-        diry = -1;
-        angle = 0;
-        break;
-    case 'l':
-        dirx =  1;
-        diry =  0;
-        angle = 90;
-        break;
-    case 'y':
-        dirx = -1;
-        diry = -1;
-        angle = -45;
-        break;
-    case 'u':
-        dirx =  1;
-        diry = -1;
-        angle = 45;
-        break;
-    case 'b':
-        dirx = -1;
-        diry =  1;
-        angle = -135;
-        break;
-    case 'n':
-        dirx =  1;
-        diry =  1;
-        angle = 135;
-        break;
-    case '.':
-        dirx =  1;
-        diry = -1;
-        break;
-    }
-    *pdirx = dirx;
-    *pdiry = diry;
-    *pangle = angle;
-}
 
-void print_hruler() {
+//------------------------------------------------------------
+
+static void print_hruler() {
   putchar(' ');
   for (int j = 0; j < NH_COLS; j++) {
     putchar(j % 10 ? '-' : ('0'+j/10));
   }
   putchar('\n');
 }
-void print_vruler(int i) {
+
+//------------------------------------------------------------
+
+static void print_vruler(int i) {
   putchar(i % 10 ? '|' : ('0'+i/10));
 }
+
+//------------------------------------------------------------
 
 void tty_dump(tty vt) {
   attrchar* ac = vt->scr;
@@ -500,6 +466,8 @@ void tty_dump(tty vt) {
   print_hruler();
   printf("cursor at i=%d j=%d\n",vt->cy,vt->cx);
 }
+
+//------------------------------------------------------------
 
 void frame_dump(frame_t* frame) {
   char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
@@ -576,35 +544,19 @@ void frame_dump(frame_t* frame) {
   printf("hero at i=%d j=%d\n",frame->hero_i,frame->hero_j);
 }
 
-void write_pov_frame(const frame_t* frame, const char* ofname, const char* tfname) {
-    const int h = 2;
-    FILE* outf;
-    outf = fopen ( ofname, "w" );
-    fprintf ( outf, "#include \"%s\"\n", tfname );
+//------------------------------------------------------------
 
-    for ( int i = 0 ; ( i < 21 ) ; ++i ) {
-        for ( int j = 0 ; j < 80 ; ++j ) {
-	  char ascii = 0, col = 0, bol = 0;
-          fprintf ( outf, "object { Tiles[%d][%d][%d] translate %d*x+%d*z }\n", ascii, col, bol, j, ( 20 - i ) );
-        }
+void frame_write(frame_t* frame, FILE* out) {
+  glyph_t* g = frame->glyphs;
+  for (int i = 0; i < NH_ROWS; i++) {
+    for (int j = 0; j < NH_COLS; j++, g++) {
+      fprintf(out,"%d %d %u %u %d %d %d %d\n",i,j,
+	      g->code,g->flags,g->ascii,g->color,g->dx,g->  dy);
     }
-    int cx = frame->hero_j;
-    int cy = frame->hero_i;
-    glyph_t hero_data = frget(frame,frame->hero_i,frame->hero_j);
-    int dirx = hero_data.dx;
-    int diry = hero_data.dy;
-    fprintf ( outf, "light_source { GlobalLight translate %d*x+%d*z }\n", cx, 21 - cy );
-    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dirx, 21 - cy - 0.1 * diry );
-    fprintf ( outf, "camera {\n" );
-    fprintf ( outf, "  perspective\n" );
-    fprintf ( outf, "  right (1920/1080)*x\n" );
-    fprintf ( outf, "  sky y\n" );
-    fprintf ( outf, "  location <%d,%d,%d> \n", cx - h * dirx, 2 * h, 21 - cy + h * diry );
-    fprintf ( outf, "  look_at  <%d,0.5,%d>\n", cx, 21 - cy );
-    fprintf ( outf, "}\n" );
-
-    fclose ( outf );
+  }
 }
+
+//------------------------------------------------------------
 
 frame_t* frame_init() {
   frame_t* out = (frame_t*) malloc(sizeof(frame_t));
@@ -617,6 +569,8 @@ frame_t* frame_init() {
   out->valid = 0;
   return out;
 }
+
+//------------------------------------------------------------
 
 void frame_reset(frame_t* f) {
   for (int i = 0; i < NH_COLS*NH_ROWS; ++i) {
@@ -634,10 +588,14 @@ void frame_reset(frame_t* f) {
   }
 }
 
+//------------------------------------------------------------
+
 void frame_free(frame_t* f) {
   free(f->glyphs);
   free(f);
 }
+
+//------------------------------------------------------------
 
 void frame_copy(frame_t* dst, const frame_t* src) {
   // override everything BUT the dynamic pointer!
@@ -646,6 +604,14 @@ void frame_copy(frame_t* dst, const frame_t* src) {
   dst->glyphs = dst_ptr;
   memcpy(dst->glyphs,src->glyphs,sizeof(glyph_t)*NH_ROWS*NH_COLS);
 }
+
+int frame_changed(const frame_t* a, const frame_t* b) {
+  if (a->hero_i != b->hero_i) return 1;
+  if (a->hero_j != b->hero_j) return 1;
+  return memcmp(a->glyphs,b->glyphs,sizeof(glyph_t)*NH_COLS*NH_ROWS);
+}
+
+//------------------------------------------------------------
 
 void tty_to_frame(tty vt, frame_t* frame) {
   //
@@ -671,6 +637,44 @@ void tty_to_frame(tty vt, frame_t* frame) {
       gl->ascii = ac.ch;
       gl->color = vtattr_to_color(ac.attr);
     }
-  }
-  
+  }  
+}
+
+//------------------------------------------------------------
+
+void frame_to_pov(const frame_t* frame, const char* ofname, const char* tfname) {
+    const int h = 2;
+    FILE* outf;
+    outf = fopen ( ofname, "w" );
+    fprintf ( outf, "#include \"%s\"\n", tfname );
+    
+    for ( int i = 1 ; ( i < 22 ) ; ++i ) {
+        for ( int j = 0 ; j < NH_COLS ; ++j ) {
+	  glyph_t* g = &frget(frame,i,j);
+          fprintf ( outf, "object { Tiles[%d][%d]",
+		    g->ascii, g->color );
+	  if ((g->dy != 0) || (g->dx != 0)) {
+	    double angle = -(180.0/M_PI)*atan2f(g->dy, g->dx);
+	    fprintf( outf, "\trotate %f*y\n", angle );
+	  }
+	  fprintf( outf, "\ttranslate <%3d,  0,%3d>\n", j, (20 - i));
+	  fprintf( outf, "\n");
+        }
+    }
+    int cx = frame->hero_j;
+    int cy = frame->hero_i;
+    glyph_t hero_data = frget(frame,frame->hero_i,frame->hero_j);
+    int dirx = hero_data.dx;
+    int diry = hero_data.dy;
+    fprintf ( outf, "light_source { GlobalLight translate %d*x+%d*z }\n", cx, 21 - cy );
+    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dirx, 21 - cy - 0.1 * diry );
+    fprintf ( outf, "camera {\n" );
+    fprintf ( outf, "  perspective\n" );
+    fprintf ( outf, "  right (1920/1080)*x\n" );
+    fprintf ( outf, "  sky y\n" );
+    fprintf ( outf, "  location <%d,%d,%d> \n", cx - h * dirx, 2 * h, 21 - cy + h * diry );
+    fprintf ( outf, "  look_at  <%d,0.5,%d>\n", cx, 21 - cy );
+    fprintf ( outf, "}\n" );
+
+    fclose ( outf );
 }
