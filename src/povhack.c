@@ -115,7 +115,7 @@ frame_t* frame_init();
 void frame_free(frame_t* f);
 void frame_reset(frame_t* f);
 void frame_copy(frame_t* dst, const frame_t* src);
-void frame_dump(frame_t* frame);
+void frame_dump(frame_t* frame, FILE* out);
 void frame_write(frame_t* frame, FILE* out);
 int frame_changed(const frame_t* a, const frame_t* b);
 
@@ -220,10 +220,16 @@ int main ( int argc, char * argv[] ) {
 	    detect_motion(frame,prev_frame);
 	    //printf("*** vt dump:\n");
 	    //tty_dump(vt);
+	    FILE* fout;
+	    
 	    printf("*** frame dump:\n");
-	    frame_dump(frame);
+	    //snprintf(ofname,127,"%s_%06d.dbg",ofprefix,nframes);
+	    //fout = fopen(ofname,"w");
+	    frame_dump(frame,fout);
+	    //fclose(fout);
+	    
 	    snprintf(ofname,127,"%s_%06d.frm",ofprefix,nframes);
-	    FILE* fout = fopen(ofname,"w");
+	    fout = fopen(ofname,"w");
 	    frame_write(frame,fout);
 	    fclose(fout);
 	    // save frame
@@ -471,7 +477,7 @@ void tty_dump(tty vt) {
 
 //------------------------------------------------------------
 
-void frame_dump(frame_t* frame) {
+void frame_dump(frame_t* frame, FILE* outf) {
   char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // ascii
   glyph_t* g = frame->glyphs;
@@ -644,38 +650,66 @@ void tty_to_frame(tty vt, frame_t* frame) {
 
 //------------------------------------------------------------
 
+//#define FLAG_CORPSE        0x0001
+//#define FLAG_INVISIBLE     0x0002
+//#define FLAG_DETECTED      0x0004
+//#define FLAG_PET           0x0008
+//#define FLAG_RIDDEN        0x0010
+//#define FLAG_STATUE        0x0020
+//#define FLAG_PILE          0x0040
+//#define FLAG_LAVA_HILIGHT  0x0080
+//#define FLAG_ICE_HILIGHT   0x0100
+//#define FLAG_OUT_OF_SIGHT  0x0200
+//#define FLAG_UNEXPLORED    0x0400
+//#define FLAG_FEMALE        0x0800
+//#define FLAG_BADCOORDS     0x1000
+
 void frame_to_pov(const frame_t* frame, FILE* outf, const char* tfname) {
-    const int h = 2;
+    const double h = 1;
     fprintf ( outf, "#include \"%s\"\n", tfname );
-    
+    static double prev_dx = 0, prev_dy = 0;
     for ( int i = 1 ; ( i < 22 ) ; ++i ) {
         for ( int j = 0 ; j < NH_COLS ; ++j ) {
 	  glyph_t* g = &frget(frame,i,j);
-          fprintf ( outf, "object { Tiles[%d][%d]",
-		    g->ascii, g->color );
+	  uint16_t flags = g->flags;
+	  char chr = g->ascii;
+          fprintf ( outf, " object { Tiles[%d][%d] ", chr, g->color);
+	  // perhaps rotate
 	  if ((g->dy != 0) || (g->dx != 0)) {
-	    double angle = -(180.0/M_PI)*atan2f(g->dy, g->dx);
+	    double angle = 90-(180.0/M_PI)*atan2f(g->dy, g->dx);
 	    fprintf( outf, " rotate %f*y ", angle );
 	  }
-	  fprintf( outf, " translate <%3d,  0,%3d>", j, (20 - i));
-	  fprintf( outf, " }\n");
+	  fprintf( outf, " translate <%3d,  0,%3d> }\n", j, (20 - i));
+	  if (chr != '>') { // if ladder down, don't put a floor
+ 	    fprintf( outf, " object {Floor ");
+	    fprintf( outf, " translate <%3d,  0,%3d> }\n", j, (20 - i));
+	  }
         }
     }
-    int cx = frame->hero_j;
-    int cy = frame->hero_i;
+    double cx = frame->hero_j;
+    double cy = frame->hero_i;
     glyph_t hero_data = frget(frame,frame->hero_i,frame->hero_j);
-    int dirx = hero_data.dx;
-    int diry = hero_data.dy;
-    fprintf ( outf, "light_source { GlobalLight translate %d*x+%d*z }\n", cx, 20 - cy );
-    fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Green} finish {ambient 1} no_shadow translate %d*x+%d*z }\n", cx, 20 - cy );
-    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dirx, 20 - cy - 0.1 * diry );
-    fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Blue}  finish {ambient 1} no_shadow translate %f*x+%f*z }\n", cx + 0.1 * dirx, 20 - cy - 0.1 * diry );
+    double dx = hero_data.dx;
+    double dy = hero_data.dy;
+    if ((dx == 0) && (dy == 0)) {
+      prev_dx *= 0.5;
+      prev_dy *= 0.5;
+      dx = prev_dx;
+      dy = prev_dy;
+    } else {
+      prev_dx = dx;
+      prev_dy = dy;
+    }
+    fprintf ( outf, "light_source { GlobalLight translate %f*x+%f*z }\n", cx, 20 - cy );
+    //fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Green} finish {ambient 1} no_shadow translate %d*x+%d*z }\n", cx, 20 - cy );
+    fprintf ( outf, "light_source { LocalLight  translate %f*x+%f*z }\n", cx + 0.1 * dx, 20 - cy - 0.1 * dy );
+    //fprintf ( outf, "sphere { <0,1,0>,0.1 pigment {color Blue}  finish {ambient 1} no_shadow translate %f*x+%f*z }\n", cx + 0.1 * dx, 20 - cy - 0.1 * dy );
     fprintf ( outf, "camera {\n" );
     fprintf ( outf, "  perspective\n" );
     fprintf ( outf, "  right (1920/1080)*x\n" );
     fprintf ( outf, "  sky y\n" );
-    fprintf ( outf, "  location <%d,%d,%d> \n", cx - h * dirx, 2 * h, 20 - cy + h * diry );
-    fprintf ( outf, "  look_at  <%d,0.5,%d>\n", cx, 20 - cy );
+    fprintf ( outf, "  location <%f,%f,%f> \n", cx - h * dx, 2 * h, 20 - cy + h * dy );
+    fprintf ( outf, "  look_at  <%f,0.5,%f>\n", cx, 20 - cy );
     fprintf ( outf, "}\n" );
 
 }

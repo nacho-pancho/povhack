@@ -86,13 +86,14 @@
 #declare GroundColor1 = color <0.4,0.3,0.2>;
 #declare GroundColor2 = color <0.8,0.7,0.6>;
 
-#declare HallwayTexture = texture {
-  pigment {
-    granite color_map{ [0.0 GroundColor1][1.0 GroundColor2] }
-  }
-  normal { gradient 1.6 }
-  scale <0.05,0.10,0.05>  
-}
+#declare HallwayTexture = FloorTexture
+//texture {
+//  pigment {
+//    granite color_map{ [0.0 GroundColor1][1.0 GroundColor2] }
+//  }
+//  normal { gradient 1.6 }
+//  scale <0.05,0.10,0.05>  
+//}
 
 #declare Wall = box { 
   <-0.51,0.0,-0.51>,<0.51,RoomHeight,0.51>
@@ -176,10 +177,7 @@
       texture { TileTexture pigment { ANSIColors[col] } }
       translate 0.25*y-0.25*x-0.5*TileThickness*z
     }
-    #declare Tiles[code][col] = union {
-      object { Floor } 
-      object { BaseTile }
-    }
+    #declare Tiles[code][col] = BaseTile
    #end
 #end
 
@@ -217,8 +215,8 @@
   translate 0.25*y-0.25*x-0.5*TileThickness*z
 }
 
-#declare Tiles[64][7] = union { object { Floor } object {Avatar } }
-#declare Tiles[64][8] = union { object { Floor } object {Avatar } }
+#declare Tiles[64][7] = Avatar
+#declare Tiles[64][8] = Avatar
 //
 // hallway floor
 //
@@ -240,13 +238,10 @@
 #declare Tiles[124][8] = box { Wall }
 
 // open horizontal door
-#declare Tiles[124][3] = union {
-  object { Floor } 
-  box { 
-    <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5>
-  }
-    texture { DoorTexture }
-}
+#declare Tiles[124][3] = box { 
+    <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5> 
+    texture { DoorTexture } }
+#declare Tiles[124][11] = Tiles[124][3]
 
 ///
 // horizontal walls
@@ -256,13 +251,11 @@
 #declare Tiles[45][8] = box {  Wall }
 
 // open vertical door
-#declare Tiles[45][3] = union { 
-  object { Floor } 
-  box { 
+#declare Tiles[45][3] =  box { 
     <-0.51,0.0,-0.51>,<0.51,RoomHeight,-0.41>
     texture { DoorTexture }
   }
-}
+#declare Tiles[45][11] = Tiles[45][3]
 ///
 // closed door (+)
 //
@@ -283,7 +276,6 @@
 }
 
 #declare Tiles[60][7] = union { // up
-  object { Floor }
   object { Ladder }
 }
 #declare Tiles[60][8] = Tiles[60][7]
