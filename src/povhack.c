@@ -28,6 +28,8 @@ void frame_to_pov(const frame_t* prev_frame,
 // macros to avoid stupid errors
 // 
 
+int get_game_time(const char* status);
+
 //------------------------------------------------------------
 
 int main ( int argc, char * argv[] ) {
@@ -61,6 +63,7 @@ int main ( int argc, char * argv[] ) {
     
     int game_frame = 0;
     int video_frame = 0;
+    int prev_time = -1;
     while ( !feof ( inf ) ) {
       //
       // intercept NetHack output
@@ -68,66 +71,72 @@ int main ( int argc, char * argv[] ) {
       int c = fgetc ( inf );
       vt_command_t* vtc = intercept_command(c);
       if (vtc) {
-	//printf("command %c, %d args: ",vtc->cmd,vtc->npar);
-	//for (int i = 0; i < vtc->npar; i++) {
-	//  printf(" %d",vtc->par[i]);
-	//}
 	if (is_start_glyph(vtc)) {
-	  //printf("i=%d,j=%d: start glyph %d %d\n",
-	  //	 vt->cy,vt->cx,vtc->par[2],vtc->par[3]);
+	  printf("i=%d,j=%d: start glyph %d %d\n",
+	  	 vt->cy,vt->cx,vtc->par[2],vtc->par[3]);
 	  int i = vt->cy;
 	  int j = vt->cx;
 	  // get glyph code and flags
 	  glyph_t* g = &frame->glyphs[i*NH_COLS+j];
 	  g->code = vtc->par[2]; // ESC [ 1; 0; code; flags z
 	  g->flags = vtc->par[3]; // ESC [ 1; 0; code; flags z
-	}  else if (is_end_frame(vtc)) {
-	  // capture hero position
-	  frame->hero_i = vt->cy;
-	  frame->hero_j = vt->cx;
-	  frame->number = game_frame;
-	  // copy vt100 data to frame
+	} else if (is_end_frame(vtc)) {
 	  tty_to_frame(vt,frame);
-	  // detect changes
-	  if (frame_changed(frame,prev_frame)) {
-	    // detect motion
-	    detect_motion(frame,prev_frame);
-	    //printf("*** vt dump:\n");
-	    //tty_dump(vt);
-	    
-	    FILE* fout = NULL;
-	    snprintf(ofname,127,"%s_%06d.dbg",cfg.output_prefix,game_frame);
-	    fout = fopen(ofname,"w");
-	    frame_dump(frame,fout);
-	    fclose(fout);
-	    
-	    snprintf(ofname,127,"%s_%06d.frm",cfg.output_prefix,game_frame);
-	    fout = fopen(ofname,"w");
-	    frame_write(frame,fout);
-	    fclose(fout);
-	    // save frame
-	    for (int i = 1; i <= cfg.subframes; ++i) {
-	      const double T = (double) i / (double)cfg.subframes;
-	      snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,video_frame);
+	  printf("END FRAME frame %d\n",game_frame);
+	  int time = get_game_time(frame->status2);
+	  printf("TIME %d\n",time);
+	  if (time != prev_time) {	    
+	    prev_time = time;
+	    // capture hero position
+	    frame->hero_i = vt->cy;
+	    frame->hero_j = vt->cx;
+	    int valid = frame_valid(frame);
+	    if (!valid) {
+	      printf("FRAME is not valid!\n");
+	    } else {
+	      frame->number = game_frame;
+	      // paste  vt100 data to frame
+	      // detect changes
+	      // detect motion
+	      detect_motion(frame,prev_frame);
+	      //printf("*** vt dump:\n");
+	      //tty_dump(vt);
+	  
+	      FILE* fout = NULL;
+	      snprintf(ofname,127,"%s_%06d.dbg",cfg.output_prefix,game_frame);
 	      fout = fopen(ofname,"w");
-	      frame_to_pov(prev_frame,frame,&cfg,T, fout);
+	      frame_dump(frame,fout);
 	      fclose(fout);
-	      video_frame++;
+	  
+	      snprintf(ofname,127,"%s_%06d.frm",cfg.output_prefix,game_frame);
+	      fout = fopen(ofname,"w");
+	      frame_write(frame,fout);
+	      fclose(fout);
+	      // save frame
+	      for (int i = 1; i <= cfg.subframes; ++i) {
+		const double T = (double) i / (double)cfg.subframes;
+		snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,video_frame);
+		fout = fopen(ofname,"w");
+		frame_to_pov(prev_frame,frame,&cfg,T, fout);
+		fclose(fout);
+		video_frame++;
+	      }
 	    }
-	    // save as previous frame
+	    // save current frame as previous frame
+	    frame_copy(prev_frame,frame);
+	    // reset current frame
+	    frame_reset(frame);
+	    // advance frame
 	    game_frame++;
-	  } else {
-	  }
-	  // reset frame
-	  frame_copy(prev_frame,frame);
-	  frame_reset(frame);
-	}
-      }
+	  } // actually changed time
+	} // end frame
+      } // end is a vt command
       //
       // write to in-memory virtual terminal
       //
       tty_write ( vt, ( char* ) &c, 1 );
-    }
+    } // while
+    
     printf ( "processed %d game frames\n", game_frame );
     printf ( "wrote %d video frames\n", video_frame );
     fclose ( inf );
@@ -135,6 +144,16 @@ int main ( int argc, char * argv[] ) {
     frame_free ( prev_frame );
     frame_free (frame);
     exit ( 0 );
+}
+
+int get_game_time(const char* status) {
+  char* off = strstr(status,"T:");
+  if (!off) { fprintf(stderr,"WTF?? %s\n",status); return -1; }
+  else {
+    int pepe;
+    sscanf(off+2,"%d ",&pepe);
+    return pepe;
+  }
 }
 
 //------------------------------------------------------------
@@ -171,7 +190,7 @@ void apply_style(vt_command_t* vtc, glyph_t* glyph) {
 #include <ctype.h>
 
 int is_monster(char c) {
-  char monsters[] = {'~','&','\'',':',';','@',0};
+  char monsters[] = {'@','~','&','\'',':',';',0};
   if (isalpha(c)) return 1;
   for (int i = 0; monsters[i] != 0; ++i) {
     if (c == monsters[i]) return 1;
@@ -183,6 +202,7 @@ int is_monster(char c) {
 
 void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 
+  char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // motion is stored in a printable char: there are 25 possible movements
   // written using letters from A to Y
   // the character is computed as:  'A' + 5*(2+dy) + (2+dx)
@@ -190,7 +210,6 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
   for (int i = 1; i < 22; ++i) {
     for (int j = 0; j < 80; ++j) {
       glyph_t* target = &frget(frame,i,j);
-      const glyph_t* prev   = &frget(prev_frame,i,j);
       char tc = target->ascii;
       int tg = target->code;
 
@@ -202,14 +221,17 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	target->tele = 0;
 	continue;
       }
+      printf("motion of character %c (glyph %d) at i=%d j=%d :",tc,tg, i,j);
       //
       // we search for matching glyphs
       // this is more robust than chars
       //
+      const glyph_t* prev = &frget(prev_frame,i,j);
       if (tg == prev->code) {
 	target->dx = 0;
 	target->dy = 0;
 	target->tele = 0;
+	printf("none.\n");
 	continue;
       }
       
@@ -218,14 +240,18 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
       int di1 = i < 21 ? +1: 0;
       int dj0 = j > 0 ?  -1: 0;
       int dj1 = j < 79 ? +1: 0;
-      for (int di = -di0; !found && (di <= di1); ++di) {
-	for (int dj = -dj0; (dj <= dj1); ++dj) {
+      for (int di = di0; !found && (di <= di1); ++di) {
+	for (int dj = dj0; (dj <= dj1); ++dj) {
 	  prev = &frget(prev_frame,i+di,j+dj);
 	  if (tg == prev->code) {
 	    target->dy = -di;
 	    target->dx = -dj;
 	    target->tele = 0;
 	    found = 1;
+	    const int dx =  target->dx > 0 ? 1: (target->dx < 0 ? -1 : 0);
+	    const int dy =  target->dy > 0 ? 1: (target->dy < 0 ? -1 : 0);
+	    char k = movkey[1+dy][1+dx];
+	    printf("moved di=%d, dj=%d dx=%d dy=%d(%c)\n",di,dj,target->dx,target->dy,k);
 	    break;
 	  }
 	}
@@ -245,6 +271,10 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	    target->dy = -di;
 	    target->dx = -dj;
 	    target->tele = 0;
+	    const int dx =  target->dx > 0 ? 1: (target->dx < 0 ? -1 : 0);
+	    const int dy =  target->dy > 0 ? 1: (target->dy < 0 ? -1 : 0);
+	    char k = movkey[1+dy][1+dx];;
+	    printf("moved di=%d, dj=%d (%c)\n",di,dj,k);
 	    found = 1;
 	    break;
 	  }
@@ -253,7 +283,10 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
       //
       // where is this guy?
       // likely teleported
-      target->tele = 1;
+      if (!found) {
+	printf("not found! teleported?\n");
+	target->tele = 1;
+      }
     } // for each col
   } // for each row
 } // end search
@@ -287,11 +320,14 @@ void frame_to_pov(const frame_t* prev_frame,
 		  double T,
 		  FILE* outf ) {
 
+  fprintf ( outf, "#version 3.7;\n" );
   fprintf ( outf, "#declare GameFrame = %d;\n", curr_frame->number );
   fprintf ( outf, "#declare GameSubFrame = %f;\n", T );
   fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
 
-  static double prev_hero_x, prev_hero_y;
+  // the camera needs to be remembered between frames
+  static double camera_x, camera_y;
+  
   for ( int i = 1 ; ( i < 22 ) ; ++i ) {
         for ( int j = 0 ; j < NH_COLS ; ++j ) {
 	  glyph_t* g0    = &frget(prev_frame,i,j);
@@ -302,6 +338,8 @@ void frame_to_pov(const frame_t* prev_frame,
 	  // floor
 	  double cx = j;
 	  double cy = 20 - i;
+	  fprintf(outf,"#declare CoordX=%f;\n",cx);
+	  fprintf(outf,"#declare CoordY=%f;\n",cy);
 	  // it's our hero!
 	  if (chr != '>') { // if ladder down, don't put a floor
  	    fprintf( outf, "object { Floor ");
@@ -325,7 +363,6 @@ void frame_to_pov(const frame_t* prev_frame,
 	    const double dy0 = g0->dy;
 	    const double dx1 = g1->dx;
 	    const double dy1 = g1->dy;
-
 	    // interpolated speed is only for computing the rotation angle
 	    const double dx = (1.0-T)*dx0 + T*dx1;
 	    const double dy = (1.0-T)*dy0 + T*dy1;
@@ -341,35 +378,44 @@ void frame_to_pov(const frame_t* prev_frame,
 	      cy -= (1.0-T)*dy1;
 	    } else {
 	      // the guy teleported
+	      printf("teleported from to %d,%d to %d,%d?\n",
+		     prev_frame->hero_i, prev_frame->hero_j,
+		     curr_frame->hero_i, curr_frame->hero_j);
 	      angle = 0;
 	    }
 	    fprintf( outf, " translate <%5f,  0,%5f>\n}\n", cx, cy);
 	    if ((i == curr_frame->hero_i) && (j == curr_frame->hero_j)) { // is this our hero??
-	      double camx, camy;
-	      if (!g1->tele) {
-		camx = prev_hero_x;
-		camy = prev_hero_y;
-	      } else {
+	      if (g1->tele) {
 		// the guy likely teleported
-		// default camera a little behind the guy
-		camx = cx;
-		camy = cy - 0.2;
+		// reset camera
+		camera_x = cx;
+		camera_y = cy - 0.2;
 	      }
-	      prev_hero_x = cx;
-	      prev_hero_y = cy;
 	      //
 	      // this is our hero!
 	      // lights and cameras please
 	      //
-	      fprintf ( outf, "light_source { GlobalLight translate %5f*x+%5f*z }\n", camx, camy );
+	      fprintf(outf,"#declare CameraX=%f;\n",camera_x);
+	      fprintf(outf,"#declare CameraY=%f;\n",camera_y);
+	      fprintf(outf,"#declare HeroX=%f;\n",cx);
+	      fprintf(outf,"#declare HeroY=%f;\n",cy);
+	      fprintf ( outf, "light_source { GlobalLight translate %5f*x+%5f*z }\n", camera_x, camera_y );
 	      fprintf ( outf, "light_source { LocalLight  translate %5f*x+%5f*z }\n", cx, cy);
 	      fprintf ( outf, "camera {\n" );
 	      fprintf ( outf, "  perspective\n" );
 	      fprintf ( outf, "  right (1920/1080)*x\n" );
 	      fprintf ( outf, "  sky y\n" );
-	      fprintf ( outf, "  location <%5f,CameraHeight,%5f> \n", camx, camy);
-	      fprintf ( outf, "  look_at  <%5f,CameraHeight,%5f>\n", cx,  cy );
+	      fprintf ( outf, "  location <%5f,CameraHeight,%5f> \n", camera_x, camera_y);
+	      fprintf ( outf, "  look_at  <%5f,0.7,%5f>\n", cx,  cy );
 	      fprintf ( outf, "}\n" );
+	      //
+	      // update camera position: follow the steps of our hero
+	      //
+	      if ((cx != camera_x) || (cy != camera_y)) {
+		// the guy moved; update camera
+		camera_x = cx;
+		camera_y = cy;
+	      }
 	    }
 	  }
         }

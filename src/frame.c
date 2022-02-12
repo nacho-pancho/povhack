@@ -55,6 +55,16 @@ void frame_copy(frame_t* dst, const frame_t* src) {
 
 //------------------------------------------------------------
 
+int frame_valid(const frame_t* f) {
+  const int i = f->hero_i;
+  const int j = f->hero_j;
+  const glyph_t* g = &frget(f,i,j);
+  printf("valid?: i=%d j=%d a=%d c=%d\n",i,j,g->ascii,g->code);
+  return (g->code != 0); 
+}
+
+//------------------------------------------------------------
+
 int frame_changed(const frame_t* a, const frame_t* b) {
   if (a->hero_i != b->hero_i) return 1;
   if (a->hero_j != b->hero_j) return 1;

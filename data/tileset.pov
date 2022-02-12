@@ -7,6 +7,12 @@
 // "easy" if you know PovRay :)
 //==================================================================
 
+global_settings { 
+  ambient_light 0.1*White 
+  assumed_gamma 1.0
+}
+
+
 #declare RoomHeight = 1.0;
 
 #declare TileFont = "fonts/FreeMono.ttf";
@@ -278,9 +284,8 @@
   texture { DoorTexture }
 }
 
-#declare Tiles[60][7] = union { // up
-  object { Ladder }
-}
+#declare Tiles[60][7] = Ladder
+
 #declare Tiles[60][8] = Tiles[60][7]
 #declare Tiles[60][0] = Tiles[60][7]
 
@@ -289,4 +294,3 @@
 #declare Tiles[62][8] = Ladder
   
 
-global_settings { ambient_light 0.1*White }
