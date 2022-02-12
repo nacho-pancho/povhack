@@ -72,8 +72,8 @@ int main ( int argc, char * argv[] ) {
       vt_command_t* vtc = intercept_command(c);
       if (vtc) {
 	if (is_start_glyph(vtc)) {
-	  printf("i=%d,j=%d: start glyph %d %d\n",
-	  	 vt->cy,vt->cx,vtc->par[2],vtc->par[3]);
+	  //printf("i=%d,j=%d: start glyph %d %d\n",
+	  //	 vt->cy,vt->cx,vtc->par[2],vtc->par[3]);
 	  int i = vt->cy;
 	  int j = vt->cx;
 	  // get glyph code and flags
@@ -148,7 +148,7 @@ int main ( int argc, char * argv[] ) {
 
 int get_game_time(const char* status) {
   char* off = strstr(status,"T:");
-  if (!off) { fprintf(stderr,"WTF?? %s\n",status); return -1; }
+  if (!off) { return -1; }
   else {
     int pepe;
     sscanf(off+2,"%d ",&pepe);
@@ -202,7 +202,6 @@ int is_monster(char c) {
 
 void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 
-  char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // motion is stored in a printable char: there are 25 possible movements
   // written using letters from A to Y
   // the character is computed as:  'A' + 5*(2+dy) + (2+dx)
@@ -221,7 +220,7 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	target->tele = 0;
 	continue;
       }
-      printf("motion of character %c (glyph %d) at i=%d j=%d :",tc,tg, i,j);
+      //printf("motion of character %c (glyph %d) at i=%d j=%d :",tc,tg, i,j);
       //
       // we search for matching glyphs
       // this is more robust than chars
@@ -231,7 +230,7 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	target->dx = 0;
 	target->dy = 0;
 	target->tele = 0;
-	printf("none.\n");
+	//printf("none.\n");
 	continue;
       }
       
@@ -248,10 +247,6 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	    target->dx = -dj;
 	    target->tele = 0;
 	    found = 1;
-	    const int dx =  target->dx > 0 ? 1: (target->dx < 0 ? -1 : 0);
-	    const int dy =  target->dy > 0 ? 1: (target->dy < 0 ? -1 : 0);
-	    char k = movkey[1+dy][1+dx];
-	    printf("moved di=%d, dj=%d dx=%d dy=%d(%c)\n",di,dj,target->dx,target->dy,k);
 	    break;
 	  }
 	}
@@ -271,10 +266,6 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 	    target->dy = -di;
 	    target->dx = -dj;
 	    target->tele = 0;
-	    const int dx =  target->dx > 0 ? 1: (target->dx < 0 ? -1 : 0);
-	    const int dy =  target->dy > 0 ? 1: (target->dy < 0 ? -1 : 0);
-	    char k = movkey[1+dy][1+dx];;
-	    printf("moved di=%d, dj=%d (%c)\n",di,dj,k);
 	    found = 1;
 	    break;
 	  }
@@ -284,7 +275,7 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
       // where is this guy?
       // likely teleported
       if (!found) {
-	printf("not found! teleported?\n");
+	//printf("not found! teleported?\n");
 	target->tele = 1;
       }
     } // for each col
@@ -306,12 +297,6 @@ void detect_motion(frame_t* frame, const frame_t* prev_frame) {
 //#define FLAG_UNEXPLORED    0x0400
 //#define FLAG_FEMALE        0x0800
 //#define FLAG_BADCOORDS     0x1000
-
-//static char unmovable[] = {' ','#','.','|','-','+','%','>','<','{','_','}','\\','/','^','[',']','0','`','$','%','*','(',')','?','!',0};
-
-//#define NH_STRUCTURE
-//#define NH_DUNGEON
-//#define NH_ITEM
 
 
 void frame_to_pov(const frame_t* prev_frame,
@@ -335,11 +320,26 @@ void frame_to_pov(const frame_t* prev_frame,
 	  uint16_t flags = g1->flags;
 	  char     chr   = g1->ascii;
 	  char     color = g1->color;
+	  const double dx0 = g0->dx;
+	  const double dy0 = g0->dy;
+	  const double dx1 = g1->dx;
+	  const double dy1 = g1->dy;
+	  const double dx = (1.0-T)*dx0 + T*dx1;
+	  const double dy = (1.0-T)*dy0 + T*dy1;	    
+	  double angle = 90-(180.0/M_PI)*atan2f(dy, dx);
 	  // floor
 	  double cx = j;
 	  double cy = 20 - i;
 	  fprintf(outf,"#declare CoordX=%f;\n",cx);
-	  fprintf(outf,"#declare CoordY=%f;\n",cy);
+	  fprintf(outf,"#declare dx0=%f;\n",dx0);
+	  fprintf(outf,"#declare dy0=%f;\n",dy0);
+	  fprintf(outf,"#declare dx1=%f;\n",dx1);
+	  fprintf(outf,"#declare dy1=%f;\n",dy1);
+
+	  fprintf(outf,"#declare dx=%f;\n",dx);
+	  fprintf(outf,"#declare dy=%f;\n",dy);
+	  fprintf(outf,"#declare angle=%f;\n",angle);
+	  
 	  // it's our hero!
 	  if (chr != '>') { // if ladder down, don't put a floor
  	    fprintf( outf, "object { Floor ");
@@ -359,15 +359,7 @@ void frame_to_pov(const frame_t* prev_frame,
 	    //
 	    // monsters can move
 	    //
-	    const double dx0 = g0->dx;
-	    const double dy0 = g0->dy;
-	    const double dx1 = g1->dx;
-	    const double dy1 = g1->dy;
 	    // interpolated speed is only for computing the rotation angle
-	    const double dx = (1.0-T)*dx0 + T*dx1;
-	    const double dy = (1.0-T)*dy0 + T*dy1;
-	    
-	    double angle = 90-(180.0/M_PI)*atan2f(dy, dx);
 	    fprintf( outf, " rotate %5f*y\n", angle );
 	    // when T < 1, we are showing the frames between the previous and
 	    // the current. Thus we need to displace the glyph *backwards* 
@@ -399,6 +391,13 @@ void frame_to_pov(const frame_t* prev_frame,
 	      fprintf(outf,"#declare CameraY=%f;\n",camera_y);
 	      fprintf(outf,"#declare HeroX=%f;\n",cx);
 	      fprintf(outf,"#declare HeroY=%f;\n",cy);
+	      //
+	      // debug
+	      //
+#if 1
+	      fprintf ( outf, "box { <-0.02,0.0,0.0>,< 0.02,0.05,0.5> pigment {color Red} translate %5f*x+%5f*z }\n", cx, cy );
+	      fprintf ( outf, "cylinder { <0.0,0.02,0.0>,< 0.5*%f,0.02,0.5*%f>,0.02 pigment {color Green} translate %5f*x+%5f*z }\n", -dx, dy, cx, cy );
+#endif	      
 	      fprintf ( outf, "light_source { GlobalLight translate %5f*x+%5f*z }\n", camera_x, camera_y );
 	      fprintf ( outf, "light_source { LocalLight  translate %5f*x+%5f*z }\n", cx, cy);
 	      fprintf ( outf, "camera {\n" );

@@ -19,7 +19,8 @@ global_settings {
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
 #declare TileSize      = 0.5;
-#declare CameraHeight  = 0.7; 
+//#declare CameraHeight  = 0.7; 
+#declare CameraHeight  = 3.0; 
 #declare CameraDistance = 1;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
@@ -109,10 +110,11 @@ global_settings {
   texture { WallTexture }
 }
 
-#declare Floor = box {
-  <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
-  texture { FloorTexture }
-}
+#declare Floor =
+  box {
+    <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
+    texture { FloorTexture }
+  }
 
 #declare Hallway = box {
   <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
@@ -122,6 +124,8 @@ global_settings {
 #declare Ceiling =  box {
   <-0.51,RoomHeight,-0.51>,<0.51,RoomHeight+0.01,0.51>
   texture { WallTexture }
+  no_image
+  no_shadow
 }
 // 
 // torch carried by our hero
@@ -155,7 +159,7 @@ global_settings {
 #declare ANSIColors[6] = pigment { color 0.5*Cyan }
 #declare ANSIColors[7] = pigment { color 0.66*White } // 'normal' color in Nethack
 
-#declare ANSIColors[8] = pigment { color 0.33*Black } // seldom used
+#declare ANSIColors[8] = pigment { color 0.66*White } // seldom used
 #declare ANSIColors[9] = pigment { color Red }
 #declare ANSIColors[10] = pigment { color Green }
 #declare ANSIColors[11] = pigment { color Yellow }
