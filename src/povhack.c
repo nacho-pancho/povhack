@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
 #include "logging.h"
-#include "frame.h"
 #include "options.h"
 #include "vt100.h"
+#include "frame.h"
 #include "nethack.h"
 #include "motion.h"
 
-void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
-
+//------------------------------------------------------------
 /**
  * most important function of this program
  */
@@ -20,9 +20,8 @@ void frame_to_pov(frame_t* prev_frame,
 		  const config_t* cfg,
 		  double time,
 		  FILE* outf );
-//
-// macros to avoid stupid errors
-// 
+
+//------------------------------------------------------------
 
 int get_game_time(const char* status);
 
@@ -81,7 +80,7 @@ int main ( int argc, char * argv[] ) {
 	  printf("TIME %d\n",time);
 	  if (time != prev_time) {	    
 	    prev_time = time;
-	    // capture hero position
+	    // catpure hero position
 	    frame->hero_y = vt->cy;
 	    frame->hero_x = vt->cx;
 	    int valid = frame_valid(frame);
@@ -152,74 +151,6 @@ int get_game_time(const char* status) {
 }
 
 //------------------------------------------------------------
-
-void apply_style(vt_command_t* vtc, glyph_t* glyph) {
-  uint64_t style_cmd = vtc->par[0];
-  
-  switch (style_cmd) {
-  case 0: // reset style
-    glyph->color = 0;
-    break;
-  case 1: // bold
-    glyph->color |= 0x08;
-    break;
-  case 22: // normal intensity
-    glyph->color &= 0x07;
-    break;
-  case 23: // 
-    glyph->color &= 0x07;
-    break;
-  case 30: case 31: case 32: case 33: //foreground color (8 colors)
-  case 34: case 35: case 36: case 37:    
-    glyph->color = glyph->color & 0xf8;
-    glyph->color |= (style_cmd - 30);
-    break;
-    // 40-47 are background color
-  default:
-    break;
-  }
-}
-
-
-//------------------------------------------------------------
-#include <ctype.h>
-
-int is_monster(char c) {
-  char sym[] = {'@','~','&','\'',':',';',0};
-  if (isalpha(c)) return 1;
-  for (int i = 0; sym[i] != 0; ++i) {
-    if (c == sym[i]) return 1;
-  }
-  return 0;
-}
-
-int is_structure(char c) {
-  char sym[] = {'|','-','+',0};
-  for (int i = 0; sym[i] != 0; ++i) {
-    if (c == sym[i]) return 1;
-  }
-  return 0;
-}
-
-//------------------------------------------------------------
-
-
-//------------------------------------------------------------
-
-//#define FLAG_CORPSE        0x0001
-//#define FLAG_INVISIBLE     0x0002
-//#define FLAG_DETECTED      0x0004
-//#define FLAG_PET           0x0008
-//#define FLAG_RIDDEN        0x0010
-//#define FLAG_STATUE        0x0020
-//#define FLAG_PILE          0x0040
-//#define FLAG_LAVA_HILIGHT  0x0080
-//#define FLAG_ICE_HILIGHT   0x0100
-//#define FLAG_OUT_OF_SIGHT  0x0200
-//#define FLAG_UNEXPLORED    0x0400
-//#define FLAG_FEMALE        0x0800
-//#define FLAG_BADCOORDS     0x1000
-
 
 void frame_to_pov(frame_t* prev_frame,
 		  frame_t* curr_frame,

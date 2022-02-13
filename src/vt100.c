@@ -149,3 +149,33 @@ void tty_to_frame(tty vt, frame_t* frame) {
   }  
 }
 
+
+//------------------------------------------------------------
+
+void apply_style(vt_command_t* vtc, glyph_t* glyph) {
+  uint64_t style_cmd = vtc->par[0];
+  
+  switch (style_cmd) {
+  case 0: // reset style
+    glyph->color = 0;
+    break;
+  case 1: // bold
+    glyph->color |= 0x08;
+    break;
+  case 22: // normal intensity
+    glyph->color &= 0x07;
+    break;
+  case 23: // 
+    glyph->color &= 0x07;
+    break;
+  case 30: case 31: case 32: case 33: //foreground color (8 colors)
+  case 34: case 35: case 36: case 37:    
+    glyph->color = glyph->color & 0xf8;
+    glyph->color |= (style_cmd - 30);
+    break;
+    // 40-47 are background color
+  default:
+    break;
+  }
+}
+

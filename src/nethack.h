@@ -27,4 +27,7 @@
 #define FLAG_FEMALE        0x0800
 #define FLAG_BADCOORDS     0x1000
 
+int is_monster(char c);
+int is_structure(char c);
+
 #endif

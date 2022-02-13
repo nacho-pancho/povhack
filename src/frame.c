@@ -23,8 +23,10 @@ glyph_t* frame_get_text(frame_t* f, int x, int y) {
 
 frame_t* frame_init() {
   frame_t* out = (frame_t*) malloc(sizeof(frame_t));
-  out->hero_x = 0;
-  out->hero_y = 0;
+  out->cursor_x = 0;
+  out->cursor_y = 0;
+  out->hero_x = -1;
+  out->hero_y = -1;
   out->number = 0;
   out->valid = 0;
   out->ncols = NH_COLS;
@@ -51,6 +53,8 @@ void frame_reset(frame_t* f) {
   f->status2[0] = 0;
   f->hero_x = -1;
   f->hero_y = -1;
+  f->cursor_x = 0;
+  f->cursor_y = 0;
 }
 
 //------------------------------------------------------------

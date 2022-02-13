@@ -30,5 +30,7 @@ void tty_dump(tty vt, FILE* out);
 
 void tty_to_frame(tty vt, frame_t* frame);
 
+//void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
+
 
 #endif

@@ -14,9 +14,10 @@ typedef struct {
   int16_t number; // frame number
   uint16_t ncols; // size 
   uint16_t nrows; // size
+  int16_t cursor_x;
+  int16_t cursor_y;
   int16_t hero_x; // current position of hero
   int16_t hero_y; // current position of hero
-
   //
   // thera are 5 layers that make up the scene
   //
