@@ -327,6 +327,9 @@ void frame_to_pov(frame_t* prev_frame,
 	  char     chr   = g1->ascii;
 	  char     color = g1->color;
 	  int is_hero = (x1 == hx) && (y1 == hy);
+	  if (chr == ' ') { // nothing here
+		  continue;
+	  }
 	  if (chr != '>') { // if ladder down, don't put a floor
  	    fprintf( outf, "object { Floor ");
 	    fprintf( outf, " translate < %2d, %2d,  0 > }\n", x1, y1);
