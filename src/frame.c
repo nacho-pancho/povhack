@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "frame.h"
 
+glyph_t* frame_get(frame_t* f, int x, int y) {
+  return f->glyphs + y*NH_COLS + x;
+}
 
 //------------------------------------------------------------
 
@@ -10,8 +13,8 @@ frame_t* frame_init() {
   out->ncols = NH_COLS;
   out->nrows = NH_ROWS;
   out->glyphs = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->hero_i = 0;
-  out->hero_j = 0;
+  out->hero_x = 0;
+  out->hero_y = 0;
   out->number = 0;
   out->valid = 0;
   return out;
@@ -31,8 +34,8 @@ void frame_reset(frame_t* f) {
     f->message[0] = 0;
     f->status1[0] = 0;
     f->status2[0] = 0;
-    f->hero_i = -1;
-    f->hero_j = -1;
+    f->hero_x = -1;
+    f->hero_y = -1;
   }
 }
 
@@ -55,19 +58,19 @@ void frame_copy(frame_t* dst, const frame_t* src) {
 
 //------------------------------------------------------------
 
-int frame_valid(const frame_t* f) {
-  const int i = f->hero_i;
-  const int j = f->hero_j;
-  const glyph_t* g = &frget(f,i,j);
-  printf("valid?: i=%d j=%d a=%d c=%d\n",i,j,g->ascii,g->code);
+int frame_valid(frame_t* f) {
+  const int x = f->hero_x;
+  const int y = f->hero_y;
+  const glyph_t* g = frame_get(f,x,y);
+  printf("valid?: x=%d y=%d a=%d c=%d\n",x,y,g->ascii,g->code);
   return (g->code != 0); 
 }
 
 //------------------------------------------------------------
 
 int frame_changed(const frame_t* a, const frame_t* b) {
-  if (a->hero_i != b->hero_i) return 1;
-  if (a->hero_j != b->hero_j) return 1;
+  if (a->hero_x != b->hero_x) return 1;
+  if (a->hero_y != b->hero_y) return 1;
   return memcmp(a->glyphs+NH_COLS,b->glyphs+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4));
 }
 
@@ -75,9 +78,9 @@ int frame_changed(const frame_t* a, const frame_t* b) {
 
 void frame_write(frame_t* frame, FILE* out) {
   glyph_t* g = frame->glyphs;
-  for (int i = 0; i < NH_ROWS; i++) {
-    for (int j = 0; j < NH_COLS; j++, g++) {
-      fprintf(out,"%d %d %u %u %d %d %d %d\n",i,j,
+  for (int y = 0; y < NH_ROWS; y++) {
+    for (int x = 0; x < NH_COLS; x++, g++) {
+      fprintf(out,"%d %d %u %u %d %d %d %d\n",x,y,
 	      g->code,g->flags,g->ascii,g->color,g->dx,g->  dy);
     }
   }
@@ -175,5 +178,5 @@ void frame_dump(frame_t* frame, FILE* out) {
   fprintf(out,"msg:%s\n",frame->message);
   fprintf(out,"st1:%s\n",frame->status1);
   fprintf(out,"st2:%s\n",frame->status2);
-  fprintf(out,"hero at i=%d j=%d\n",frame->hero_i,frame->hero_j);
+  fprintf(out,"hero at %2d, %2d\n",frame->hero_x,frame->hero_y);
 }

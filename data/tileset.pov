@@ -18,9 +18,9 @@ global_settings {
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
-#declare TileSize      = 0.5;
+#declare TileSize      = 1.0;
 //#declare CameraHeight  = 0.7; 
-#declare CameraHeight  = 3.0; 
+#declare CameraHeight  = 8.0; 
 #declare CameraDistance = 1;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
@@ -69,10 +69,10 @@ global_settings {
          }
 
          scale <3.5, 1, 1>
-         translate -50*y
-         rotate 1.5*z
+         translate -50*z
+         rotate 1.5*y
       }
-      rotate y*45
+      rotate 45*z
       scale 0.1
    }
 
@@ -106,23 +106,23 @@ global_settings {
 //}
 
 #declare Wall = box { 
-  <-0.51,0.0,-0.51>,<0.51,RoomHeight,0.51>
+  <-0.51, -0.51, 0.0 >,< 0.51, 0.51, RoomHeight>
   texture { WallTexture }
 }
 
 #declare Floor =
   box {
-    <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
+    < -0.51, -0.51, -0.01 >,< 0.51, 0.51, 0.0 >
     texture { FloorTexture }
   }
 
 #declare Hallway = box {
-  <-0.51,-0.01,-0.51>,<0.51,0.0,0.51>
+  <-0.51, -0.51, -0.01>,<0.51, 0.51, 0.0>
   texture { HallwayTexture }
 }
 
 #declare Ceiling =  box {
-  <-0.51,RoomHeight,-0.51>,<0.51,RoomHeight+0.01,0.51>
+  <-0.51,-0.51, RoomHeight>,<0.51,0.51,RoomHeight+0.01>
   texture { WallTexture }
   no_image
   no_shadow
@@ -131,7 +131,7 @@ global_settings {
 // torch carried by our hero
 //
 #declare LocalLight =  light_source { 
-    <0,RoomHeight-0.1,0>, 0.7*LocalLightColor
+    <0,0,RoomHeight-0.1>, LocalLightColor
     spotlight
     radius 40
     falloff 70 
@@ -139,8 +139,8 @@ global_settings {
 }
 
 #declare GlobalLight =  light_source { 
-    <0,RoomHeight-0.1,0>, 0.15*GlobalLightColor
-    area_light 0.2*x,0.2*z,5,5
+    <0, 0, RoomHeight-0.1>, 0.2*GlobalLightColor
+    area_light 1*x, 1*y, 5, 5
 }
 
 //
@@ -185,9 +185,10 @@ global_settings {
   #for (col,0,15) 
     #declare BaseTile = text { 
       ttf TileFont chr(code) TileThickness, TileShift 
-      texture { TileTexture pigment { ANSIColors[col] } }      
-      translate <-0.25, 0.25, 0.5*TileThickness>
+      texture { TileTexture pigment { ANSIColors[col] } }            
+      translate <-0.25, 0.2, -0.5*TileThickness>
       scale TileSize
+      rotate 90*x // from x,y plane to x,z plane
     }
     #declare Tiles[code][col] = BaseTile
    #end
@@ -226,10 +227,11 @@ global_settings {
   texture { TileTexture pigment { ANSIColors[15] } }
   translate <-0.25,0.25,-0.5*TileThickness>
   scale TileSize
+  rotate 90*x // from x,y plane to x,z plane
 }
 
-#declare Tiles[64][7] = Avatar
-#declare Tiles[64][8] = Avatar
+//#declare Tiles[64][7] = Avatar
+//#declare Tiles[64][8] = Avatar
 //
 // hallway floor
 //
@@ -252,7 +254,7 @@ global_settings {
 
 // open horizontal door
 #declare Tiles[124][3] = box { 
-    <-0.5,0.0,-0.5>,<-0.4,RoomHeight,0.5> 
+    <-0.5,-0.5,0.0>,<-0.4,0.5,RoomHeight> 
     texture { DoorTexture } }
 #declare Tiles[124][11] = Tiles[124][3]
 
@@ -273,17 +275,21 @@ global_settings {
 // closed door (+)
 //
 #declare Tiles[43][3] = box { // closed door
-  <-0.5,0.0,-0.5>,<0.5,RoomHeight,0.5>
+  <-0.5,-0.5,0.0>,<0.5,0.5,RoomHeight>
+  texture { DoorTexture }
+}
+#declare Tiles[43][11] = box { // closed door
+  <-0.5,-0.5,0.0>,<0.5,0.5,RoomHeight>
   texture { DoorTexture }
 }
 
 
 #declare Ladder = union {
-  cylinder {<-0.2,-1.2*RoomHeight,-0.2>,<-0.2,1.2*RoomHeight,-0.2>,0.05}
-  cylinder {< 0.2,-1.2*RoomHeight, 0.2>,< 0.2,1.2*RoomHeight, 0.2>,0.05}
+  cylinder {<-0.2,-0.2,-1.2*RoomHeight>,<-0.2,-0.2,1.2*RoomHeight>,0.05}
+  cylinder {< 0.2, 0.2,-1.2*RoomHeight>,< 0.2, 0.2,1.2*RoomHeight>,0.05}
   #for (step,-5,5)
     #declare Y = RoomHeight*(step/5)+0.1 ;
-    cylinder {< -0.19, Y, -0.19>,< 0.19, Y, 0.19>,0.03 }
+    cylinder {< -0.19, -0.19, Y>,< 0.19, 0.19, Y>,0.03 }
   #end  
   texture { DoorTexture }
 }

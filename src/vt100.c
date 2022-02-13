@@ -134,7 +134,7 @@ void tty_to_frame(tty vt, frame_t* frame) {
   for (int i = 0; i < NH_ROWS; i++) {
     for (int j = 0; j < NH_COLS; j++) {
       attrchar ac = vtget(vt,i,j);
-      glyph_t* gl = &frget(frame,i,j);
+      glyph_t* gl = frame_get(frame,j,i); // x,y
       gl->ascii = ac.ch;
       gl->color = vtattr_to_color(ac.attr);
     }
