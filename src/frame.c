@@ -2,58 +2,85 @@
 #include <stdio.h>
 #include "frame.h"
 
-glyph_t* frame_get(frame_t* f, int x, int y) {
-  return f->glyphs + y*NH_COLS + x;
+glyph_t* frame_get_dungeon(frame_t* f, int x, int y) {
+  return f->dungeon + y*NH_COLS + x;
+}
+
+glyph_t* frame_get_object(frame_t* f, int x, int y) {
+  return f->objects + y*NH_COLS + x;
+}
+glyph_t* frame_get_monster(frame_t* f, int x, int y) {
+  return f->monsters + y*NH_COLS + x;
+}
+glyph_t* frame_get_effect(frame_t* f, int x, int y) {
+  return f->effects + y*NH_COLS + x;
+}
+glyph_t* frame_get_text(frame_t* f, int x, int y) {
+  return f->text + y*NH_COLS + x;
 }
 
 //------------------------------------------------------------
 
 frame_t* frame_init() {
   frame_t* out = (frame_t*) malloc(sizeof(frame_t));
-  out->ncols = NH_COLS;
-  out->nrows = NH_ROWS;
-  out->glyphs = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
   out->hero_x = 0;
   out->hero_y = 0;
   out->number = 0;
   out->valid = 0;
+  out->ncols = NH_COLS;
+  out->nrows = NH_ROWS;
+  out->dungeon  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->objects  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->monsters = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->effects  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->text     = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
   return out;
 }
 
 //------------------------------------------------------------
 
 void frame_reset(frame_t* f) {
-  for (int i = 0; i < NH_COLS*NH_ROWS; ++i) {
-    f->glyphs[i].ascii = 0x20; // space
-    f->glyphs[i].flags = 0;
-    f->glyphs[i].code = 0;
-    f->glyphs[i].color = 0;
-    f->glyphs[i].dx    = 0;
-    f->glyphs[i].dy    = 0;
-    f->glyphs[i].tele  = 1;
-    f->message[0] = 0;
-    f->status1[0] = 0;
-    f->status2[0] = 0;
-    f->hero_x = -1;
-    f->hero_y = -1;
-  }
+  memset(f->dungeon, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  memset(f->objects, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  memset(f->monsters,0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  memset(f->effects, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  memset(f->text,    0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+
+  f->message[0] = 0;
+  f->status1[0] = 0;
+  f->status2[0] = 0;
+  f->hero_x = -1;
+  f->hero_y = -1;
 }
 
 //------------------------------------------------------------
 
 void frame_free(frame_t* f) {
-  free(f->glyphs);
+  free(f->dungeon);
+  free(f->objects);
+  free(f->monsters);
+  free(f->effects);
+  free(f->text);
   free(f);
 }
 
 //------------------------------------------------------------
 
 void frame_copy(frame_t* dst, const frame_t* src) {
-  // override everything BUT the dynamic pointer!
-  glyph_t* dst_ptr = dst->glyphs;
-  memcpy(dst,src,sizeof(frame_t));
-  dst->glyphs = dst_ptr;
-  memcpy(dst->glyphs,src->glyphs,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  dst->hero_x = src->hero_x;
+  dst->hero_y = src->hero_y;
+  dst->number = src->number;
+  dst->valid  = src->valid;
+  dst->nrows  = src->nrows;
+  dst->ncols  = src->ncols;
+  strcpy(dst->message,src->message);
+  strcpy(dst->status1,src->status1);
+  strcpy(dst->status1,src->status2);
+  memcpy(dst->dungeon,src->dungeon,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  memcpy(dst->objects,src->objects,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  memcpy(dst->monsters,src->monsters,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  memcpy(dst->effects,src->effects,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  memcpy(dst->text,src->text,sizeof(glyph_t)*NH_ROWS*NH_COLS);
 }
 
 //------------------------------------------------------------
@@ -61,8 +88,7 @@ void frame_copy(frame_t* dst, const frame_t* src) {
 int frame_valid(frame_t* f) {
   const int x = f->hero_x;
   const int y = f->hero_y;
-  const glyph_t* g = frame_get(f,x,y);
-  printf("valid?: x=%d y=%d a=%d c=%d\n",x,y,g->ascii,g->code);
+  const glyph_t* g = frame_get_monster(f,x,y);
   return (g->code != 0); 
 }
 
@@ -71,17 +97,36 @@ int frame_valid(frame_t* f) {
 int frame_changed(const frame_t* a, const frame_t* b) {
   if (a->hero_x != b->hero_x) return 1;
   if (a->hero_y != b->hero_y) return 1;
-  return memcmp(a->glyphs+NH_COLS,b->glyphs+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4));
+  if (memcmp(a->dungeon+NH_COLS,b->dungeon+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
+  if (memcmp(a->objects+NH_COLS,b->objects+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
+  if (memcmp(a->monsters+NH_COLS,b->monsters+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
+  if (memcmp(a->effects+NH_COLS,b->effects+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
+  if (memcmp(a->text,b->text,sizeof(glyph_t)*NH_COLS*NH_ROWS)) return 1;
+  return 0;
 }
 
 //------------------------------------------------------------
 
 void frame_write(frame_t* frame, FILE* out) {
-  glyph_t* g = frame->glyphs;
   for (int y = 0; y < NH_ROWS; y++) {
-    for (int x = 0; x < NH_COLS; x++, g++) {
-      fprintf(out,"%d %d %u %u %d %d %d %d\n",x,y,
-	      g->code,g->flags,g->ascii,g->color,g->dx,g->  dy);
+    for (int x = 0; x < NH_COLS; x++) {
+      glyph_t* g;
+      fprintf(out,"%d %d ",x,y);
+      g = frame_get_dungeon(frame,x,y);
+      fprintf(out,"%d %d %d %d ",
+	      g->code,g->flags,g->ascii,g->color);
+      g = frame_get_object(frame,x,y);
+      fprintf(out,"%d %d %d %d ",
+	      g->code,g->flags,g->ascii,g->color);
+      g = frame_get_monster(frame,x,y);
+      fprintf(out,"%d %d %d %d %d %d ",
+	      g->code,g->flags,g->ascii,g->color,g->dx,g->dy);
+      g = frame_get_effect(frame,x,y);
+      fprintf(out,"%d %d %d %d ",
+	      g->code,g->flags,g->ascii,g->color);
+      g = frame_get_text(frame,x,y);
+      fprintf(out,"%u %u\n",
+	      g->ascii,g->color);
     }
   }
 }
@@ -106,6 +151,7 @@ static void vruler(int i, FILE* out) {
 //------------------------------------------------------------
 
 void frame_dump(frame_t* frame, FILE* out) {
+#if 0
   if (!out) return;
   char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // ascii
@@ -179,4 +225,5 @@ void frame_dump(frame_t* frame, FILE* out) {
   fprintf(out,"st1:%s\n",frame->status1);
   fprintf(out,"st2:%s\n",frame->status2);
   fprintf(out,"hero at %2d, %2d\n",frame->hero_x,frame->hero_y);
+#endif  
 }

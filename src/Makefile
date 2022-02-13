@@ -1,4 +1,4 @@
-OBJ=vt100.o frame.o glyph.o logging.o options.o 
+OBJ=vt100.o frame.o glyph.o logging.o options.o terminal.o motion.o
 
 .c.o:
 	gcc -Wall -c $<

@@ -1,0 +1,7 @@
+- handle teleports and abrupt jumps properly
+- persistence of objects when monsters go above 
+-  should have multiple layers (handle background/foregrond separately)
+- detect and handle dungeon level changes
+- improve textures
+- add especial textures to monoliths
+- handle flags, e.g., handle statues so that they are shown as stone 
