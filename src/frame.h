@@ -6,7 +6,7 @@
 #include "glyph.h"
 
 #define NH_COLS 80
-#define NH_ROWS 24
+#define NH_ROWS 25
 
 #define NLAYERS 5
 #define DUNGEON_LAYER 0
