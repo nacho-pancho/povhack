@@ -6,6 +6,6 @@
 #define TERMINAL_H
 #include "frame.h"
 
-void frame_write_char(frame_t* f, char c);
+void frame_write_char(frame_t* f, int c);
 
 #endif

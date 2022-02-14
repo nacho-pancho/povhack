@@ -511,7 +511,7 @@ CSI Ps L  Insert Ps Line(s) (default = 1) (IL).
 
 CSI Ps M  Delete Ps Line(s) (default = 1) (DL).
 
-CSI Ps P  Delete Ps Character(s) (default = 1) (DCH).
+ b       CSI Ps P  Delete Ps Character(s) (default = 1) (DCH).
 
 CSI # P
 CSI Pm # P

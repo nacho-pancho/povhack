@@ -8,6 +8,13 @@
 #define NH_COLS 80
 #define NH_ROWS 24
 
+#define NLAYERS 5
+#define DUNGEON_LAYER 0
+#define OBJECTS_LAYER 1
+#define MONSTERS_LAYER 2
+#define EFFECTS_LAYER 3
+#define TEXT_LAYER 4
+
 typedef struct {
   // meta info
   char valid; // valid game frame (may be message only frame)
@@ -16,11 +23,15 @@ typedef struct {
   uint16_t nrows; // size
   int16_t cursor_x;
   int16_t cursor_y;
+  int16_t current_layer;
+  glyph_t current_glyph; // glyph being built
+  
   int16_t hero_x; // current position of hero
   int16_t hero_y; // current position of hero
   //
   // thera are 5 layers that make up the scene
   //
+  glyph_t* layers[NLAYERS];
   glyph_t* dungeon; // fixed stuff: floor, walls, ladders,.
   glyph_t* objects; // objects lying around 
   glyph_t* monsters; // mosters that move

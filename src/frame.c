@@ -23,30 +23,28 @@ glyph_t* frame_get_text(frame_t* f, int x, int y) {
 
 frame_t* frame_init() {
   frame_t* out = (frame_t*) malloc(sizeof(frame_t));
-  out->cursor_x = 0;
-  out->cursor_y = 0;
-  out->hero_x = -1;
-  out->hero_y = -1;
-  out->number = 0;
-  out->valid = 0;
   out->ncols = NH_COLS;
   out->nrows = NH_ROWS;
-  out->dungeon  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->objects  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->monsters = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->effects  = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->text     = (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->dungeon  = out->layers[DUNGEON_LAYER] =
+    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->objects  = out->layers[OBJECTS_LAYER] =
+    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->monsters = out->layers[MONSTERS_LAYER] =
+    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->effects  = out->layers[EFFECTS_LAYER] =
+    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  out->text     = out->layers[TEXT_LAYER] =
+    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  frame_reset(out);
   return out;
 }
 
 //------------------------------------------------------------
 
 void frame_reset(frame_t* f) {
-  memset(f->dungeon, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  memset(f->objects, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  memset(f->monsters,0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  memset(f->effects, 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  memset(f->text,    0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  for (int l = 0; l < NLAYERS; ++l) {
+    memset(f->layers[l], 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
+  }
 
   f->message[0] = 0;
   f->status1[0] = 0;
@@ -55,6 +53,8 @@ void frame_reset(frame_t* f) {
   f->hero_y = -1;
   f->cursor_x = 0;
   f->cursor_y = 0;
+  f->current_layer = TEXT_LAYER;
+  reset_glyph(&f->current_glyph);
 }
 
 //------------------------------------------------------------
@@ -77,14 +77,14 @@ void frame_copy(frame_t* dst, const frame_t* src) {
   dst->valid  = src->valid;
   dst->nrows  = src->nrows;
   dst->ncols  = src->ncols;
+  dst->current_layer = src->current_layer;
   strcpy(dst->message,src->message);
   strcpy(dst->status1,src->status1);
   strcpy(dst->status1,src->status2);
-  memcpy(dst->dungeon,src->dungeon,sizeof(glyph_t)*NH_ROWS*NH_COLS);
-  memcpy(dst->objects,src->objects,sizeof(glyph_t)*NH_ROWS*NH_COLS);
-  memcpy(dst->monsters,src->monsters,sizeof(glyph_t)*NH_ROWS*NH_COLS);
-  memcpy(dst->effects,src->effects,sizeof(glyph_t)*NH_ROWS*NH_COLS);
-  memcpy(dst->text,src->text,sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  
+  for (int l = 0; l < NLAYERS; ++l) {
+    memcpy(dst->layers[l],src->layers[l],sizeof(glyph_t)*NH_ROWS*NH_COLS);
+  }
 }
 
 //------------------------------------------------------------
@@ -101,11 +101,10 @@ int frame_valid(frame_t* f) {
 int frame_changed(const frame_t* a, const frame_t* b) {
   if (a->hero_x != b->hero_x) return 1;
   if (a->hero_y != b->hero_y) return 1;
-  if (memcmp(a->dungeon+NH_COLS,b->dungeon+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
-  if (memcmp(a->objects+NH_COLS,b->objects+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
-  if (memcmp(a->monsters+NH_COLS,b->monsters+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
-  if (memcmp(a->effects+NH_COLS,b->effects+NH_COLS,sizeof(glyph_t)*NH_COLS*(NH_ROWS-4))) return 1;
-  if (memcmp(a->text,b->text,sizeof(glyph_t)*NH_COLS*NH_ROWS)) return 1;
+  
+  for (int l = 0; l < NLAYERS; ++l) {
+    if (memcmp(a->layers[l],b->layers[l],sizeof(glyph_t)*NH_COLS*NH_ROWS)) return 1;
+  }
   return 0;
 }
 
@@ -135,7 +134,7 @@ void frame_write(frame_t* frame, FILE* out) {
   }
 }
 
-
+#if 0
 //------------------------------------------------------------
 
 static void hruler(FILE* out) {
@@ -151,7 +150,7 @@ static void hruler(FILE* out) {
 static void vruler(int i, FILE* out) {
   fputc(i % 10 ? '|' : ('0'+i/10),out);
 }
-
+#endif
 //------------------------------------------------------------
 
 void frame_dump(frame_t* frame, FILE* out) {
