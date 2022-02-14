@@ -21,32 +21,42 @@ static void print_cmd(cmd_t* cmd) {
 }
 
 static void cursor_up(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("up: ");
   print_cmd(cmd);
+#endif
   if (f->cursor_y > 0) f->cursor_y--;
 }
 
 static void cursor_down(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("down: ");
   print_cmd(cmd);
+#endif
   if (f->cursor_y < f->nrows-1) f->cursor_y++;
 }
 
 static void cursor_right(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("right: ");
   print_cmd(cmd);
+#endif
   if (f->cursor_x < f->ncols-1) f->cursor_x++;
 }
 
 static void cursor_left(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("left: ");
   print_cmd(cmd);
+#endif
   if (f->cursor_x > 0) f->cursor_x--;
 }
 
 static void cursor_goto(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("goto: ");
   print_cmd(cmd);
+#endif
   if (cmd->npar < 1) {
     f->cursor_y = 0;
     f->cursor_x = 0;
@@ -59,24 +69,44 @@ static void cursor_goto(frame_t* f,cmd_t* cmd) {
   }
 }
 
+static void erase(frame_t* f, int start, int end) {
+  for (int i = start; i < end; ++i) {
+    for (int l = 0; l < NLAYERS; ++l) {
+      reset_glyph(&f->layers[l][i]);
+    }
+  }
+}
+
 static void erase_display(frame_t* f,cmd_t* cmd) {
+#ifdef DEBUG_TERM
   printf("erase in display: ");
   print_cmd(cmd);
+#endif
   if ((cmd->npar) == 0)
     cmd->par[0] = 0;
+  const int i0 = 0;
+  const int ic = f->cursor_x+f->ncols*f->cursor_y;
+  const int i1 = f->nrows*f->ncols;
+
   switch (cmd->par[0]) {
   case 0: // erase from cursor to end
     printf("erase from cursor to end of display\n");
+    erase(f,ic,i1);
     break;
   case 1: // erase from begin to cursor
     printf("erase from beginning of display to cursor\n");
+    erase(f,i0,ic);
     break;
   case 2: // erase all
     printf("erase all\n");
+    erase(f,i0,i1);
     break;
   case 3: // erase saved lines
     printf("unhandled: erase saved display\n");
-    break;
+    return;
+  default:
+    printf("unhandled: erase display subcommand %d\n",cmd->par[0]);
+    return;
   }
 }
 
@@ -85,19 +115,27 @@ static void erase_line(frame_t* f,cmd_t* cmd) {
   print_cmd(cmd);
   if ((cmd->npar) == 0)
     cmd->par[0] = 0;
+  const int i0 = f->cursor_y*f->ncols;
+  const int ic = f->cursor_x+f->ncols*f->cursor_y;
+  const int i1 = i0 + f->ncols;
   switch (cmd->par[0]) {
   case 0: // erase from cursor to end of line
     printf("erase line from cursor to end of line\n");
+    erase(f,ic,i1);
     break;
   case 1: // erase from begin of line to cursor
-    printf("erase line from beginning to cursor\n");
+    erase(f,i0,ic);
     break;
   case 2: // erase all line
     printf("erase all\n");
+    erase(f,i0,i1);
     break;
   case 3: // erase saved lines
     printf("unhandled: erase saved lines\n");
-    break;
+    return;
+  default:
+    printf("unhandled: erase line subcommand %d\n",cmd->par[0]);
+    return;
   }
 }
 
@@ -128,17 +166,31 @@ static void set_style(frame_t* f,cmd_t* cmd) {
   }
 }
 
+static int is_glyph = 0;
+static int end_frame = 0;
+
 static void tiledata(frame_t* f,cmd_t* cmd) {
   printf("tiledata: ");
   print_cmd(cmd);
-  int subcmd = cmd->par[0];
-  int code = cmd->par[1];
-  int flags = cmd->par[2];
-  if (subcmd == '0') { // begin glyph
+  int subcmd = cmd->par[1];
+  int code = cmd->par[2];
+  int flags = cmd->par[3];
+  if (subcmd == 0) { // begin glyph
+    printf("begin glyph\n");
+    is_glyph = 1;
     f->current_glyph.flags = flags;
     f->current_glyph.code =  code;
-  } else if (subcmd == '2') { // end frame!
-    // do something important here!
+  } else if (subcmd == 1) { // end glyph
+    is_glyph = 0;
+    printf("end glyph\n");
+  } else if (subcmd == 2) { // switch to window
+    printf("select window %d\n",cmd->par[2]);
+    end_frame = 1;
+    is_glyph = 0;
+  } else if (subcmd == 3) { // end frame!
+    printf("end data\n");
+    end_frame = 1;
+    is_glyph = 0;
   }
 }
 
@@ -162,15 +214,6 @@ static int apply_cmd(frame_t* f, cmd_t* cmd) {
   case 'D':
     cursor_left(f,cmd);
     break;
-    //  case 'E':
-    //    cursor_begin_line_down(f,cmd);
-    //    break;
-    //  case 'F':
-    //    cursor_begin_line_up(f,cmd);
-    //    break;
-    //  case 'G':
-    //    cursor_goto_col(f,cmd);
-    //    break;
   case 'H':
     cursor_goto(f,cmd);
     break;
@@ -206,7 +249,7 @@ static void advance_cursor(frame_t* f) {
 
 #include <assert.h>
 
-static void frame_write_glyph(frame_t* f, int c) {
+static void frame_put_glyph(frame_t* f, int c) {
   assert(f->current_layer < NLAYERS);
   assert(f->cursor_y >= 0);
   assert(f->cursor_x >= 0);
@@ -216,7 +259,17 @@ static void frame_write_glyph(frame_t* f, int c) {
   f->layers[f->current_layer][f->cursor_x+f->cursor_y*f->ncols] = f->current_glyph;
 }
 
-void frame_write_char(frame_t* f, int c) {
+static void frame_put_text(frame_t* f, int c) {
+  assert(f->current_layer < NLAYERS);
+  assert(f->cursor_y >= 0);
+  assert(f->cursor_x >= 0);
+  assert(f->cursor_y < NH_ROWS);
+  assert(f->cursor_x < NH_COLS);
+  f->current_glyph.ascii = c;
+  f->layers[TEXT_LAYER][f->cursor_x+f->cursor_y*f->ncols] = f->current_glyph;
+}
+
+void frame_put(frame_t* f, int c) {
   if (c < 0) // EOF
     return;
 
@@ -240,11 +293,18 @@ void frame_write_char(frame_t* f, int c) {
       parval = 0;
     } else {
       // not a command,  print the char in the corresponding layer
+      if (is_glyph) {
+	printf("write glyph code=%4d ",f->current_glyph.code);
+	frame_put_glyph(f,c);
+      } else {
+	printf("write text ");
+	frame_put_text(f,c);
+      }
+      
       if (c < 33) 
-	printf("write char 0x%2x\n",c);
+	printf(" style=%02d ascii=0x%2x\n",f->current_glyph.color, f->current_glyph.ascii);
       else
-	printf("write char  %c\n",c);
-      frame_write_glyph(f,c);
+	printf(" ascii=%c\n",c);
       advance_cursor(f);      
     }
   } else { // within command

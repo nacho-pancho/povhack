@@ -55,6 +55,7 @@ void frame_free(frame_t* f);
 void frame_reset(frame_t* f);
 void frame_copy(frame_t* dst, const frame_t* src);
 void frame_dump(frame_t* frame, FILE* out);
+void frame_put(frame_t* frame, int c);
 void frame_write(frame_t* frame, FILE* out);
 int frame_changed(const frame_t* a, const frame_t* b);
 int frame_valid(frame_t* f);
