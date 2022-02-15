@@ -1,31 +1,28 @@
 #include <string.h>
 #include <stdio.h>
-#include "frame.h"
+#include "map.h"
 
-glyph_t* frame_get_dungeon(frame_t* f, int x, int y) {
-  return f->dungeon + y*NH_COLS + x;
+glyph_t* map_get_map(map_t* f, int x, int y) {
+  return f->map + y*NH_COLS + x;
 }
 
-glyph_t* frame_get_object(frame_t* f, int x, int y) {
+glyph_t* map_get_object(map_t* f, int x, int y) {
   return f->objects + y*NH_COLS + x;
 }
-glyph_t* frame_get_monster(frame_t* f, int x, int y) {
+glyph_t* map_get_monster(map_t* f, int x, int y) {
   return f->monsters + y*NH_COLS + x;
 }
-glyph_t* frame_get_effect(frame_t* f, int x, int y) {
+glyph_t* map_get_effect(map_t* f, int x, int y) {
   return f->effects + y*NH_COLS + x;
-}
-glyph_t* frame_get_text(frame_t* f, int x, int y) {
-  return f->text + y*NH_COLS + x;
 }
 
 //------------------------------------------------------------
 
-frame_t* frame_init() {
-  frame_t* out = (frame_t*) malloc(sizeof(frame_t));
+map_t* map_init() {
+  map_t* out = (map_t*) malloc(sizeof(map_t));
   out->ncols = NH_COLS;
   out->nrows = NH_ROWS;
-  out->dungeon  = out->layers[DUNGEON_LAYER] =
+  out->map  = out->layers[DUNGEON_LAYER] =
     (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
   out->objects  = out->layers[OBJECTS_LAYER] =
     (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
@@ -33,54 +30,39 @@ frame_t* frame_init() {
     (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
   out->effects  = out->layers[EFFECTS_LAYER] =
     (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  out->text     = out->layers[TEXT_LAYER] =
-    (glyph_t*) malloc(sizeof(glyph_t)*NH_COLS*NH_ROWS);
-  frame_reset(out);
+  map_reset(out);
   return out;
 }
 
 //------------------------------------------------------------
 
-void frame_reset(frame_t* f) {
+void map_reset(map_t* f) {
   for (int l = 0; l < NLAYERS; ++l) {
     memset(f->layers[l], 0, sizeof(glyph_t)*NH_COLS*NH_ROWS);
   }
 
-  f->message[0] = 0;
-  f->status1[0] = 0;
-  f->status2[0] = 0;
   f->hero_x = -1;
   f->hero_y = -1;
-  f->cursor_x = 0;
-  f->cursor_y = 0;
-  f->current_layer = TEXT_LAYER;
-  reset_glyph(&f->current_glyph);
 }
 
 //------------------------------------------------------------
 
-void frame_free(frame_t* f) {
-  free(f->dungeon);
+void map_free(map_t* f) {
+  free(f->map);
   free(f->objects);
   free(f->monsters);
   free(f->effects);
-  free(f->text);
   free(f);
 }
 
 //------------------------------------------------------------
 
-void frame_copy(frame_t* dst, const frame_t* src) {
+void map_copy(map_t* dst, const map_t* src) {
   dst->hero_x = src->hero_x;
   dst->hero_y = src->hero_y;
   dst->number = src->number;
-  dst->valid  = src->valid;
   dst->nrows  = src->nrows;
   dst->ncols  = src->ncols;
-  dst->current_layer = src->current_layer;
-  strcpy(dst->message,src->message);
-  strcpy(dst->status1,src->status1);
-  strcpy(dst->status1,src->status2);
   
   for (int l = 0; l < NLAYERS; ++l) {
     memcpy(dst->layers[l],src->layers[l],sizeof(glyph_t)*NH_ROWS*NH_COLS);
@@ -89,16 +71,16 @@ void frame_copy(frame_t* dst, const frame_t* src) {
 
 //------------------------------------------------------------
 
-int frame_valid(frame_t* f) {
+int map_valid(map_t* f) {
   const int x = f->hero_x;
   const int y = f->hero_y;
-  const glyph_t* g = frame_get_monster(f,x,y);
+  const glyph_t* g = map_get_monster(f,x,y);
   return (g->code != 0); 
 }
 
 //------------------------------------------------------------
 
-int frame_changed(const frame_t* a, const frame_t* b) {
+int map_changed(const map_t* a, const map_t* b) {
   if (a->hero_x != b->hero_x) return 1;
   if (a->hero_y != b->hero_y) return 1;
   
@@ -109,56 +91,34 @@ int frame_changed(const frame_t* a, const frame_t* b) {
 }
 
 //------------------------------------------------------------
+int infer_layer(glyph_t g) {
+  return DUNGEON_LAYER;
+}
 
-void frame_write(frame_t* frame, FILE* out) {
+void map_put(map_t* m, int x, int y, int gcode, int gflags, int gchar, int gcolor) {
+  const int i = x + m->ncols*y;
+  glyph_t g = create_glyph(gcode,gflags,gchar,gcolor);
+  const int L = infer_layer(g);
+  m->layers[L][i] = g;
+}
+
+//------------------------------------------------------------
+
+void map_write(map_t* map, FILE* out) {
   for (int y = 0; y < NH_ROWS; y++) {
     for (int x = 0; x < NH_COLS; x++) {
-      glyph_t* g;
-      fprintf(out,"%d %d ",x,y);
-      g = frame_get_dungeon(frame,x,y);
-      fprintf(out,"%d %d %d %d ",
-	      g->code,g->flags,g->ascii,g->color);
-      g = frame_get_object(frame,x,y);
-      fprintf(out,"%d %d %d %d ",
-	      g->code,g->flags,g->ascii,g->color);
-      g = frame_get_monster(frame,x,y);
-      fprintf(out,"%d %d %d %d %d %d ",
-	      g->code,g->flags,g->ascii,g->color,g->dx,g->dy);
-      g = frame_get_effect(frame,x,y);
-      fprintf(out,"%d %d %d %d ",
-	      g->code,g->flags,g->ascii,g->color);
-      g = frame_get_text(frame,x,y);
-      fprintf(out,"%u %u\n",
-	      g->ascii,g->color);
     }
   }
 }
 
-#if 0
 //------------------------------------------------------------
 
-static void hruler(FILE* out) {
-  fputc(' ',out);
-  for (int j = 0; j < NH_COLS; j++) {
-    fputc(j % 10 ? '-' : ('0'+j/10),out);
-  }
-  fputc('\n',out);
-}
-
-//------------------------------------------------------------
-
-static void vruler(int i, FILE* out) {
-  fputc(i % 10 ? '|' : ('0'+i/10),out);
-}
-#endif
-//------------------------------------------------------------
-
-void frame_dump(frame_t* frame, FILE* out) {
+void map_dump(map_t* map, FILE* out) {
 #if 0
   if (!out) return;
   char movkey[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} }; 
   // ascii
-  glyph_t* g = frame->glyphs;
+  glyph_t* g = map->glyphs;
   fprintf(out,"chars:\n");
   hruler(out);
   for (int i = 0; i < NH_ROWS; i++) {
@@ -170,7 +130,7 @@ void frame_dump(frame_t* frame, FILE* out) {
     fputc('\n',out);
   }
   fprintf(out,"movement:\n");
-  g = frame->glyphs;
+  g = map->glyphs;
   hruler(out);
   for (int i = 0; i < NH_ROWS; i++) {
     vruler(i,out);
@@ -184,7 +144,7 @@ void frame_dump(frame_t* frame, FILE* out) {
   }
   // style
   fprintf(out,"color:\n");
-  g = frame->glyphs;
+  g = map->glyphs;
   hruler(out);
   for (int i = 0; i < NH_ROWS; i++) {
     vruler(i,out);
@@ -196,7 +156,7 @@ void frame_dump(frame_t* frame, FILE* out) {
     fputc('\n',out);
   }
   // glyph (only first 4 bits)
-  g = frame->glyphs;
+  g = map->glyphs;
   fprintf(out,"glyphs:\n");
   hruler(out);
   for (int i = 0; i < NH_ROWS; i++) {
@@ -209,7 +169,7 @@ void frame_dump(frame_t* frame, FILE* out) {
     fputc('\n',out);
   }  
   // flags (only first 4 bits
-  g = frame->glyphs;
+  g = map->glyphs;
   fprintf(out,"flags:\n");
   hruler(out);
   for (int i = 0; i < NH_ROWS; i++) {
@@ -222,11 +182,11 @@ void frame_dump(frame_t* frame, FILE* out) {
     fputc('\n',out);
   }  
   hruler(out);
-  fprintf(out,"valid:%s\n",frame->valid? "YES": "NO");
-  fprintf(out,"num:%d\n",frame->number);
-  fprintf(out,"msg:%s\n",frame->message);
-  fprintf(out,"st1:%s\n",frame->status1);
-  fprintf(out,"st2:%s\n",frame->status2);
-  fprintf(out,"hero at %2d, %2d\n",frame->hero_x,frame->hero_y);
+  fprintf(out,"valid:%s\n",map->valid? "YES": "NO");
+  fprintf(out,"num:%d\n",map->number);
+  fprintf(out,"msg:%s\n",map->message);
+  fprintf(out,"st1:%s\n",map->status1);
+  fprintf(out,"st2:%s\n",map->status2);
+  fprintf(out,"hero at %2d, %2d\n",map->hero_x,map->hero_y);
 #endif  
 }

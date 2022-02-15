@@ -7,7 +7,7 @@ static struct argp_option options[] = {
     {"quiet",          'q', 0, OPTION_ARG_OPTIONAL, "Don't produce any output", 0 },
     {"prefix",         'o', "path",    0, "output file prefix", 0 },
     {"tileset",        't', "path",    0, "input file", 0 },
-    {"subframe",        'r', "int",    0, "number of video frames between game frames", 0 },
+    {"submap",        'r', "int",    0, "number of video maps between game maps", 0 },
     { 0 } // terminator
 };
 
@@ -33,7 +33,7 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
         cfg->tileset_file = arg;
         break;
     case 'r':
-      cfg->subframes = atoi(arg);
+      cfg->submaps = atoi(arg);
         break;
 
     case ARGP_KEY_ARG:
@@ -73,7 +73,7 @@ static struct argp argp = { options, _parse_opt, args_doc, program_doc, 0, 0, 0 
 config_t parse_opt ( int argc, char* * argv ) {
 
     config_t cfg;
-    cfg.subframes = 1;
+    cfg.submaps = 1;
     cfg.input_file    = NULL;
     cfg.output_prefix = "out_";
     cfg.tileset_file  = "tileset.pov";

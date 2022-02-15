@@ -7,7 +7,7 @@
 #include "logging.h"
 #include "options.h"
 #include "vt100.h"
-#include "frame.h"
+#include "map.h"
 #include "nethack.h"
 #include "motion.h"
 
@@ -15,8 +15,8 @@
 /**
  * most important function of this program
  */
-void frame_to_pov(frame_t* prev_frame,
-		  frame_t* curr_frame,
+void map_to_pov(map_t* prev_map,
+		  map_t* curr_map,
 		  const config_t* cfg,
 		  double time,
 		  FILE* outf );
@@ -49,94 +49,25 @@ int main ( int argc, char * argv[] ) {
     //
     // our info
     //
-    frame_t* frame, *prev_frame;
-    frame = frame_init();
-    prev_frame = frame_init();
-    frame_reset(frame);
-    frame_reset(prev_frame);
+    map_t* map, *prev_map;
+    map = map_init();
+    prev_map = map_init();
+    map_reset(map);
+    map_reset(prev_map);
     
     
-    int game_frame = 0;
-    int video_frame = 0;
+    int game_map = 0;
+    int video_map = 0;
     int prev_time = -1;
     while ( !feof ( inf ) ) {
-      //
-      // intercept NetHack output
-      //
-      int c = fgetc ( inf );
-      vt_command_t* vtc = intercept_command(c);
-      if (vtc) {
-	if (is_start_glyph(vtc)) {
-	  int y = vt->cy;
-	  int x = vt->cx;
-	  // get glyph code and flags
-	  glyph_t* g = frame_get(frame,x,y);
-	  g->code = vtc->par[2]; // ESC [ 1; 0; code; flags z
-	  g->flags = vtc->par[3]; // ESC [ 1; 0; code; flags z
-	} else if (is_end_frame(vtc)) {
-	  tty_to_frame(vt,frame);
-	  printf("END FRAME %d\n",game_frame);
-	  int time = get_game_time(frame->status2);
-	  printf("TIME %d\n",time);
-	  if (time != prev_time) {	    
-	    prev_time = time;
-	    // catpure hero position
-	    frame->hero_y = vt->cy;
-	    frame->hero_x = vt->cx;
-	    int valid = frame_valid(frame);
-	    if (!valid) {
-	      printf("FRAME is not valid!\n");
-	    } else {
-	      frame->number = game_frame;
-	      // paste  vt100 data to frame
-	      // detect changes
-	      // detect motion
-	      detect_motion(frame,prev_frame);
-	      //printf("*** vt dump:\n");
-	      //tty_dump(vt);
-	  
-	      FILE* fout = NULL;
-	      snprintf(ofname,127,"%s_%06d.dbg",cfg.output_prefix,game_frame);
-	      fout = fopen(ofname,"w");
-	      frame_dump(frame,fout);
-	      fclose(fout);
-	  
-	      snprintf(ofname,127,"%s_%06d.frm",cfg.output_prefix,game_frame);
-	      fout = fopen(ofname,"w");
-	      frame_write(frame,fout);
-	      fclose(fout);
-	      // save frame
-	      for (int f = 1; f <= cfg.subframes; ++f) {
-		const double T = (double) f / (double)cfg.subframes;
-		printf("video frame %10d\n",video_frame);
-		snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,video_frame);
-		fout = fopen(ofname,"w");
-		frame_to_pov(prev_frame,frame,&cfg,T, fout);
-		fclose(fout);
-		video_frame++;
-	      }
-	    }
-	    // save current frame as previous frame
-	    frame_copy(prev_frame,frame);
-	    // reset current frame
-	    frame_reset(frame);
-	    // advance frame
-	    game_frame++;
-	  } // actually changed time
-	} // end frame
-      } // end is a vt command
-      //
-      // write to in-memory virtual terminal
-      //
-      tty_write ( vt, ( char* ) &c, 1 );
     } // while
     
-    printf ( "processed %d game frames\n", game_frame );
-    printf ( "wrote %d video frames\n", video_frame );
+    printf ( "processed %d game maps\n", game_map );
+    printf ( "wrote %d video maps\n", video_map );
     fclose ( inf );
     tty_free ( vt );
-    frame_free ( prev_frame );
-    frame_free (frame);
+    map_free ( prev_map );
+    map_free (map);
     exit ( 0 );
 }
 
@@ -152,23 +83,23 @@ int get_game_time(const char* status) {
 
 //------------------------------------------------------------
 
-void frame_to_pov(frame_t* prev_frame,
-		  frame_t* curr_frame,
+void map_to_pov(map_t* prev_map,
+		  map_t* curr_map,
 		  const config_t* cfg,
 		  double T,
 		  FILE* outf ) {
 
   fprintf ( outf, "#version 3.7;\n" );
-  fprintf ( outf, "#declare GameFrame = %d;\n", curr_frame->number );
+  fprintf ( outf, "#declare GameFrame = %d;\n", curr_map->number );
   fprintf ( outf, "#declare GameSubFrame = %f;\n", T );
   fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
 
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
         for ( int x1 = 0 ; x1 < NH_COLS ; ++x1 ) {
 	  // current info on this glyph
-	  glyph_t* g1      = frame_get(curr_frame,x1,y1);
-	  double hx = curr_frame->hero_x;
-	  double hy = curr_frame->hero_y;
+	  glyph_t* g1      = 0; // map_get(curr_map,x1,y1);
+	  double hx = curr_map->hero_x;
+	  double hy = curr_map->hero_y;
 	  uint16_t flags = g1->flags;
 	  char     chr   = g1->ascii;
 	  char     color = g1->color;
@@ -202,7 +133,7 @@ void frame_to_pov(frame_t* prev_frame,
 	    // is located at its previous position (given by displacement)
 	    const int x0 = x1 - g1->dx;
 	    const int y0 = y1 - g1->dy;
-	    const glyph_t* g0 = frame_get(prev_frame,x0,y0);
+	    const glyph_t* g0 = 0; // map_get(prev_map,x0,y0);
 	    double dx0, dy0;
 	    double dx, dy;
 	    double angle;
@@ -230,7 +161,7 @@ void frame_to_pov(frame_t* prev_frame,
 	    //	   T,x1,y1,x0,y0,dx0,dy0,dx1,dy1,dx,dy,angle);
 	    // interpolated speed is only for computing the rotation angle
 	    fprintf( outf, " rotate %5f*z\n", angle );
-	    // when T < 1, we are showing the frames between the previous and
+	    // when T < 1, we are showing the maps between the previous and
 	    // the current. Thus we need to displace the glyph *backwards* 
 	    // according to current speed and position
 	    fprintf( outf, " translate < %7.3f, %7.3f,  0>\n}\n", x, y);

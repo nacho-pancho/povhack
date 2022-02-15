@@ -1,6 +1,7 @@
-#include "frame.h"
+#include "map.h"
+#include "nethack.h"
 
-void detect_motion(frame_t* frame, frame_t* prev_frame) {
+void detect_motion(map_t* map, map_t* prev_map) {
 
   // motion is stored in a printable char: there are 25 possible movements
   // written using letters from A to Y
@@ -8,7 +9,7 @@ void detect_motion(frame_t* frame, frame_t* prev_frame) {
   // where -2 <= dx,dy <= 2
   for (int y = 1; y < 22; ++y) {
     for (int x = 0; x < 80; ++x) {
-      glyph_t* target = frame_get_monster(frame,x,y);
+      glyph_t* target = map_get_monster(map,x,y);
       char tc = target->ascii;
       int tg = target->code;
 
@@ -25,7 +26,7 @@ void detect_motion(frame_t* frame, frame_t* prev_frame) {
       // we search for matching glyphs
       // this is more robust than chars
       //
-      const glyph_t* prev = frame_get_monster(prev_frame,x,y);
+      const glyph_t* prev = map_get_monster(prev_map,x,y);
       if (tg == prev->code) {
 	target->dx = 0;
 	target->dy = 0;
@@ -41,7 +42,7 @@ void detect_motion(frame_t* frame, frame_t* prev_frame) {
       int dx1 = x < 79 ? +1: 0;
       for (int dy = dy0; !found && (dy <= dy1); ++dy) {
 	for (int dx = dx0; (dx <= dx1); ++dx) {
-	  prev = frame_get_monster(prev_frame,x+dx,y+dy);
+	  prev = map_get_monster(prev_map,x+dx,y+dy);
 	  if (tg == prev->code) {
 	    target->dy = -dy;
 	    target->dx = -dx;
@@ -61,7 +62,7 @@ void detect_motion(frame_t* frame, frame_t* prev_frame) {
       dx1 = x < 78 ? +2: 0;
       for (int dy = dy0; !found && (dy <= dy1); ++dy) {
 	for (int dx = dx0; (dx <= dx1); ++dx) {
-	  prev = frame_get_monster(prev_frame,x+dx,y+dy);
+	  prev = map_get_monster(prev_map,x+dx,y+dy);
 	  if (tg == prev->code) {
 	    target->dy = -dy;
 	    target->dx = -dx;

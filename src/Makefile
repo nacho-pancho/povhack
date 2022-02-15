@@ -1,13 +1,16 @@
-OBJ=nethack.o terminal.o frame.o glyph.o logging.o options.o  motion.o
+OBJ=nethack.o terminal.o window.o map.o glyph.o  motion.o options.o logging.o util.o
+
+all: povhack test
 
 .c.o:
-	gcc -Wall -c $<
+	gcc -Wall -g -c $<
 
-all: $(OBJ) povhack.c
+povhack: $(OBJ) povhack.c
 	gcc -Wall -o povhack povhack.c $(OBJ) -ltty -lm
 
-test: test_terminal.c terminal.c frame.c glyph.c
-	gcc -Wall -O0 -g -o test test_terminal.c terminal.c frame.c glyph.c
+
+test: test_terminal.c $(OBJ)
+	gcc -Wall -O0 -g -o test test_terminal.c $(OBJ)
 
 clean:
 	rm -f *.o povhack

@@ -122,27 +122,27 @@ void tty_dump(tty vt, FILE* out) {
 
 //------------------------------------------------------------
 
-void tty_to_frame(tty vt, frame_t* frame) {
+void tty_to_map(tty vt, map_t* map) {
   //
   // copy top message and status bars
   //
   for (int j = 0; j < NH_COLS; j++) {
-    frame->message[j] = vtget(vt,0,j).ch;
-    frame->status1[j] = vtget(vt,22,j).ch;
-    frame->status2[j] = vtget(vt,23,j).ch;
+    map->message[j] = vtget(vt,0,j).ch;
+    map->status1[j] = vtget(vt,22,j).ch;
+    map->status2[j] = vtget(vt,23,j).ch;
   }
-  frame->message[NH_COLS] = 0;
-  frame->status1[NH_COLS] = 0;
-  frame->status2[NH_COLS] = 0;
+  map->message[NH_COLS] = 0;
+  map->status1[NH_COLS] = 0;
+  map->status2[NH_COLS] = 0;
   //
   // translate vt attrchars to glyphs
   // we only overwrite character and code
-  // (we check that vt character and frame character are the same
+  // (we check that vt character and map character are the same
   // on a given position)
   for (int i = 0; i < NH_ROWS; i++) {
     for (int j = 0; j < NH_COLS; j++) {
       attrchar ac = vtget(vt,i,j);
-      glyph_t* gl = frame_get(frame,j,i); // x,y
+      glyph_t* gl = map_get(map,j,i); // x,y
       gl->ascii = ac.ch;
       gl->color = vtattr_to_color(ac.attr);
     }

@@ -1,7 +1,7 @@
 #ifndef VT100_H
 #define VT100_H
 #include <tty.h>
-#include "frame.h"
+#include "map.h"
 // 
 // general ANSI/VT100 command
 // ESC[par1;par2;...;parn<letter>
@@ -28,7 +28,7 @@ char vtattr_to_color(uint64_t attr);
 
 void tty_dump(tty vt, FILE* out);
 
-void tty_to_frame(tty vt, frame_t* frame);
+void tty_to_map(tty vt, map_t* map);
 
 //void apply_style(vt_command_t* style_cmd, glyph_t* pglyph);
 
