@@ -19,6 +19,9 @@
  *   style (bold, etc.) and character
  *
  * windows:
+ * window ids are assigned dynamically and depend of compile time stuff.
+ * for Nethack 3.6.6, these appear to be the assignments
+ *
  *   0,1: in-game messages to the player such as 'The grid bug bites' (can't tell the difference!)
  *   2: status bar
  *   3: map

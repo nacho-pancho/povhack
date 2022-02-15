@@ -5,9 +5,6 @@
 #include <stdlib.h>
 #include "glyph.h"
 
-#define NH_COLS 80
-#define NH_ROWS 25
-
 #define NLAYERS 4
 #define DUNGEON_LAYER 0
 #define OBJECTS_LAYER 1
@@ -31,7 +28,7 @@ typedef struct {
   glyph_t* effects; // especial effects like arrows, explosions, etc.
 } map_t;
 
-map_t* map_init();
+map_t* map_init(int nr, int nc);
 
 glyph_t* map_get_map(map_t* f, int x, int y);
 glyph_t* map_get_object(map_t* f, int x, int y);
@@ -44,6 +41,7 @@ void map_copy(map_t* dst, const map_t* src);
 void map_dump(map_t* map, FILE* out);
 void map_put(map_t* map, int x, int y, int gcode, int gflags, int gchar, int gcolor);
 void map_write(map_t* map, FILE* out);
+void map_set_hero_position(map_t* map, int x, int y);
 int map_changed(const map_t* a, const map_t* b);
 int map_valid(map_t* f);
 

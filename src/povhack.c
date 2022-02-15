@@ -10,6 +10,7 @@
 #include "map.h"
 #include "nethack.h"
 #include "motion.h"
+#include "terminal.h"
 
 //------------------------------------------------------------
 /**
@@ -23,7 +24,7 @@ void map_to_pov(map_t* prev_map,
 
 //------------------------------------------------------------
 
-int get_game_time(const char* status);
+int get_game_time(terminal_t* term);
 
 //------------------------------------------------------------
 
@@ -50,8 +51,8 @@ int main ( int argc, char * argv[] ) {
     // our info
     //
     map_t* map, *prev_map;
-    map = map_init();
-    prev_map = map_init();
+    map = map_init(25,80);
+    prev_map = map_init(25,80);
     map_reset(map);
     map_reset(prev_map);
     
@@ -71,7 +72,10 @@ int main ( int argc, char * argv[] ) {
     exit ( 0 );
 }
 
-int get_game_time(const char* status) {
+int get_game_time(terminal_t* term) {
+  window_t* win = term->windows[WIN_STATUS];
+  char* status = win->ascii + 24*win->ncols;
+  status[win->ncols-1] = 0; // make this line a propoer null ended C string
   char* off = strstr(status,"T:");
   if (!off) { return -1; }
   else {
@@ -95,7 +99,7 @@ void map_to_pov(map_t* prev_map,
   fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
 
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
-        for ( int x1 = 0 ; x1 < NH_COLS ; ++x1 ) {
+        for ( int x1 = 0 ; x1 < curr_map->ncols ; ++x1 ) {
 	  // current info on this glyph
 	  glyph_t* g1      = 0; // map_get(curr_map,x1,y1);
 	  double hx = curr_map->hero_x;

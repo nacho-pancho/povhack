@@ -18,10 +18,10 @@ char* window_get_color(window_t* f, int x, int y) {
 
 //------------------------------------------------------------
 
-window_t* window_init() {
+window_t* window_init(int nr, int nc) {
   window_t* out = (window_t*) malloc(sizeof(window_t));
-  out->ncols = MAX_WIN_COLS;
-  out->nrows = MAX_WIN_ROWS;
+  out->ncols = nc;
+  out->nrows = nr;
   const int numel = out->ncols*out->nrows;
   out->ascii = malloc(sizeof(char)*numel);
   out->color = malloc(sizeof(char)*numel);
@@ -65,11 +65,49 @@ void window_copy(window_t* dst, const window_t* src) {
 
 //------------------------------------------------------------
 
-void window_put(window_t* window, int c) {
-  const int i = window->cx + window->ncols*window->cy;
-  window->ascii[i] = c;
-  window->color[i] = window->cc;
+static void advance_cursor(window_t* w) {
+  w->cx++;
+  if (w->cx >= w->ncols) {
+    w->cx = 0;
+    w->cy++;
+    if (w->cy >= w->nrows) {
+      w->cy = 0;
+    }
+  }
 }
+
+void window_put(window_t* w, int c) {
+  const int i = w->cx + w->ncols*w->cy;
+  if (c >= 0x20) {
+    w->ascii[i] = c;
+    w->color[i] = w->cc;
+    advance_cursor(w);
+  } else {
+    switch (c) {      
+    case '\b': // backspace
+      if (w->cx > 0) w->cx--;
+      break;
+    case '\t': // tab
+      while (w->cx % 8) w->cx++;
+      if (w->cx >= w->ncols) w->cx = 0;
+      break;
+    case '\n': // newline
+      w->cx = 0;
+      if (w->cy < (w->ncols - 1))
+	w->cy++;
+      break;
+    case '\r': // carriage return
+      w->cx = 0;
+      break;
+    case '\a': // bell
+      break;
+    default:
+      printf("unhandled special ASCII char 0x%02x\n",c);
+      break;
+    }
+  }
+}
+
 
 //------------------------------------------------------------
 
@@ -78,7 +116,7 @@ void window_dump(window_t* window, FILE* out) {
   for (int y = 0, i = 0; y < window->nrows; y++) {
     vruler(y,out);
     for (int x = 0; x < window->ncols; x++, i++) {
-      fputc(window->ascii[i] >= ' '? window->ascii[i]:'.',out);
+      fputc(window->ascii[i] >= 0x20 ? window->ascii[i] :' ', out);
     }
     vruler(y,out);
     fputc('\n',out);

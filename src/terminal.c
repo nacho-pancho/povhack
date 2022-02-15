@@ -6,9 +6,11 @@ terminal_t* terminal_init() {
   terminal_t* out = (terminal_t*) malloc(sizeof(terminal_t));
   out->current_window = 0;
   for (int w = 0; w < NWINDOWS; ++w) {
-    out->windows[w] = window_init();
+    const int ncols = w != WIN_MAP ? 120: 80;
+    const int nrows = 25;
+    out->windows[w] = window_init(nrows,ncols);
   }
-  out->map = map_init();
+  out->map = map_init(25,80);
   terminal_reset(out);
   return out;
 }
@@ -72,7 +74,7 @@ static void cursor_down(terminal_t* f,cmd_t* cmd) {
   print_cmd(cmd);
 #endif
   window_t* w = CW(f);
-  if (w->cy < w->nrows-1) w->cy++;
+  if (w->cy < (w->nrows-1)) w->cy++;
 }
 
 static void cursor_right(terminal_t* f,cmd_t* cmd) {
@@ -81,7 +83,7 @@ static void cursor_right(terminal_t* f,cmd_t* cmd) {
   print_cmd(cmd);
 #endif
   window_t* w = CW(f);
-  if (w->cx < w->ncols-1) w->cx++;
+  if (w->cx < (w->ncols-1)) w->cx++;
 }
 
 static void cursor_left(terminal_t* f,cmd_t* cmd) {
@@ -143,12 +145,18 @@ static void erase_display(terminal_t* f,cmd_t* cmd) {
     printf("erase from cursor to end of display\n");
 #endif    
     erase_win(w,ic,i1);
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,ic,i1);
+    }
     break;
   case 1: // erase from begin to cursor
 #ifdef DEBUG_TERM
     printf("erase from beginning of display to cursor\n");
 #endif
     erase_win(w,i0,ic);
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,i0,ic);
+    }
     break;
   case 2: // erase all
 #ifdef DEBUG_TERM
@@ -156,6 +164,9 @@ static void erase_display(terminal_t* f,cmd_t* cmd) {
 #endif
     erase_win(w,i0,i1);
     w->cx = w->cy = w->cc = 0;
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,i0,i1);
+    }
     break;
   case 3: // erase saved lines
     printf("WARNING: unhandled: erase saved display\n");
@@ -184,15 +195,24 @@ static void erase_line(terminal_t* f,cmd_t* cmd) {
     printf("erase line from cursor to end of line\n");
 #endif
     erase_win(w,ic,i1);
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,ic,i1);
+    }
     break;
   case 1: // erase from begin of line to cursor
     erase_win(w,i0,ic);
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,i0,ic);
+    }
     break;
   case 2: // erase all line
 #ifdef DEBUG_TERM
     printf("erase all\n");
 #endif
     erase_win(w,i0,i1);
+    if (f->current_window == WIN_MAP) {
+      erase_map(f->map,i0,i1);
+    }
     break;
   case 3: // erase saved lines
     printf("WARNING: unhandled: erase saved lines\n");
@@ -240,6 +260,12 @@ static void end_data(terminal_t* f) {
 #ifdef DEBUG_TERM
   printf("END DATA\n.");
 #endif
+  window_t* w = CW(f);
+  printf("end data. current window %d x=%d y=%d\n",
+	 f->current_window,w->cx,w->cy);
+  if (f->current_window == WIN_MAP) {
+    map_set_hero_position(f->map,w->cx,w->cy);
+  }
   f->data_has_ended = 1;
   f->is_glyph = 0;
 }
@@ -316,18 +342,6 @@ static int apply_cmd(terminal_t* f, cmd_t* cmd) {
   return 0;
 }
 
-static void advance_cursor(terminal_t* f) {
-  window_t* w = CW(f);
-  w->cx++;
-  if (w->cx >= w->ncols) {
-    w->cx = 0;
-    w->cy++;
-    if (w->cy >= w->nrows) {
-      w->cy = 0;
-    }
-  }
-}
-
 #include <assert.h>
 
 
@@ -363,9 +377,12 @@ void terminal_put(terminal_t* f, int c) {
 	} else {
 	  // must be map window to work
 	  window_t* w = CW(f);
+	  // coordinates are drawn from window
 	  const int x = w->cx;
 	  const int y = w->cy;
+	  // char from current char
 	  const char gchar = c;
+	  // flags from previous 'start glyph' command
 	  const uint16_t gflags = f->current_glyph_flags;
 	  const uint16_t gcode  = f->current_glyph_code;
 	  const uint16_t gstyle = w->cc;
@@ -376,12 +393,15 @@ void terminal_put(terminal_t* f, int c) {
 	  map_put(f->map,x,y,gcode,gflags,gchar,gstyle);
 	}	
       }
+      //
+      // put char
+      // this may be a regular char, or a special char
+      // if it is a special char, it might move the cursor
       window_t* w = CW(f);
-      window_put(w,c);
 #ifdef DEBUG_TERM
       printf("put char %c\n",c);
-#endif  
-      advance_cursor(f);      
+#endif
+      window_put(w,c);
     }
   } else { // within command
       if ( isalpha(c) ) {
