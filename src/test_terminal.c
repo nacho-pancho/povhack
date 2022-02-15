@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
 	printf("\nWINDOW NUMBER %4d\n",w);
 	window_dump(term->windows[w],stdout);
       }
+      // reset windows??      
       term->data_has_ended = 0;
     }
   }

@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include "terminal.h"
+//#define DEBUG_TERM
 
 terminal_t* terminal_init() {
   terminal_t* out = (terminal_t*) malloc(sizeof(terminal_t));
@@ -34,9 +35,9 @@ void terminal_reset(terminal_t* f) {
 
 
 typedef struct {
-  uint16_t par[7];
-  uint8_t npar;
-  uint8_t code;
+  int16_t par[7];
+  int16_t npar;
+  int16_t code;
 } cmd_t;
 
 #define ESC_CHAR '\033'
@@ -46,10 +47,12 @@ typedef struct {
 
 static void print_cmd(cmd_t* cmd) {
   printf("ESC [ ");
-  for (int i = 0; i < cmd->npar-1; i++) {
-    printf("%d ; ",cmd->par[i]);
+  for (int i = 0; i < cmd->npar; i++) {
+    printf("%d ",cmd->par[i]);
+    if (i < (cmd->npar-1)) {
+      putchar(';');
+    }
   }
-  printf("%d ",cmd->par[cmd->npar-1]);
   putchar(cmd->code);
   putchar('\n');
 }
@@ -96,15 +99,14 @@ static void cursor_goto(terminal_t* f,cmd_t* cmd) {
   print_cmd(cmd);
 #endif
   window_t* w = CW(f);
-  if (cmd->npar < 1) {
+  if (cmd->npar == 0) {
     w->cy = 0;
     w->cx = 0;
-  } else if (cmd->npar < 2) {
-    w->cy = cmd->par[0] < w->nrows ? cmd->par[0] : w->nrows-1;
-    w->cx = 0;
-  } else {
+  } else if (cmd->npar == 2) {
     w->cy = cmd->par[0] < w->nrows ? cmd->par[0] : w->nrows-1;
     w->cx = cmd->par[1] < w->ncols ? cmd->par[1] : w->ncols-1;
+  } else {
+    printf("WARNING: invalid goto command\n");
   }
 }
 
@@ -337,7 +339,7 @@ void terminal_put(terminal_t* f, int c) {
   static int c1 = 0, c0 = 0;
   static int within_command = 0;
   static int parval;
-
+  
   if (c < 0) return;
   // update state
   c1 = c0; c0 = c;
@@ -350,7 +352,7 @@ void terminal_put(terminal_t* f, int c) {
       within_command = 1;
       cmd.code = 0;
       cmd.npar = 0;
-      parval = 0;
+      parval = -1; // no parameters yet
     } else {
       // not a command,  print the char in the corresponding layer
       if (f->is_glyph) {
@@ -384,16 +386,20 @@ void terminal_put(terminal_t* f, int c) {
   } else { // within command
       if ( isalpha(c) ) {
 	// end of command
-	cmd.par[cmd.npar++] = parval; 
+	if (parval >=0 ) // trailing parameter value
+	  cmd.par[cmd.npar++] = parval;  // 
 	cmd.code = c;
 	within_command = 0;
 	// apply command
 	apply_cmd(f,&cmd);
       } else if (c == ';') {
-	// finished a new parameter of the command
-	cmd.par[cmd.npar++] = parval;
+	// finished a new parameter of the command, a new parameter comes
+	cmd.par[cmd.npar] = parval;
+	cmd.npar++;
 	parval = 0;
       } else if ( isdigit(c)) {
+	if (parval < 0) // begin a numeric parameter
+	  parval = 0; 
 	// new  parameter digit
 	parval = parval*10 + c-'0'; // update param value
       } else if ( c == '?' ) {
