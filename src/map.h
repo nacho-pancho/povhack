@@ -22,7 +22,8 @@ typedef struct {
   // thera are 5 layers that make up the scene
   //
   glyph_t* layers[NLAYERS];
-  glyph_t* map; // fixed stuff: floor, walls, ladders,.
+
+  glyph_t* dungeon; // fixed stuff: floor, walls, ladders,.
   glyph_t* objects; // objects lying around 
   glyph_t* monsters; // mosters that move
   glyph_t* effects; // especial effects like arrows, explosions, etc.
@@ -30,7 +31,7 @@ typedef struct {
 
 map_t* map_init(int nr, int nc);
 
-glyph_t* map_get_map(map_t* f, int x, int y);
+glyph_t* map_get_dungeon(map_t* f, int x, int y);
 glyph_t* map_get_object(map_t* f, int x, int y);
 glyph_t* map_get_monster(map_t* f, int x, int y);
 glyph_t* map_get_effect(map_t* f, int x, int y);

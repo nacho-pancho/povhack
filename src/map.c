@@ -1,9 +1,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "map.h"
+#include "util.h"
 
-glyph_t* map_get_map(map_t* f, int x, int y) {
-  return f->map + y*f->ncols + x;
+glyph_t* map_get_dungeon(map_t* f, int x, int y) {
+  return f->dungeon + y*f->ncols + x;
 }
 
 glyph_t* map_get_object(map_t* f, int x, int y) {
@@ -23,7 +24,7 @@ map_t* map_init(int nr, int nc) {
   out->ncols = nc;
   out->nrows = nr;
   const int nbytes = out->ncols*out->nrows*sizeof(glyph_t);
-  out->map  = out->layers[DUNGEON_LAYER]      = (glyph_t*) malloc(nbytes);
+  out->dungeon  = out->layers[DUNGEON_LAYER]      = (glyph_t*) malloc(nbytes);
   out->objects  = out->layers[OBJECTS_LAYER]  = (glyph_t*) malloc(nbytes);
   out->monsters = out->layers[MONSTERS_LAYER] = (glyph_t*) malloc(nbytes);
   out->effects  = out->layers[EFFECTS_LAYER] =  (glyph_t*) malloc(nbytes);
@@ -45,7 +46,7 @@ void map_reset(map_t* f) {
 //------------------------------------------------------------
 
 void map_free(map_t* f) {
-  free(f->map);
+  free(f->dungeon);
   free(f->objects);
   free(f->monsters);
   free(f->effects);
@@ -88,3 +89,17 @@ void map_set_hero_position(map_t* map, int x, int y) {
 }
 
 //------------------------------------------------------------
+
+void map_dump(map_t* map, FILE* out) {
+  hruler(out,map->ncols);
+  for (int y = 0; y < map->nrows; y++) {
+    vruler(y,out);
+    for (int x = 0; x < map->ncols; x++) {
+      glyph_t* g = map_get_dungeon(map,x,y);
+      fputc(g->ascii >= 0x20 ? g->ascii :' ', out);
+    }
+    vruler(y,out);
+    fputc('\n',out);
+  }
+  hruler(out,map->ncols);
+}
