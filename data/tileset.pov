@@ -12,22 +12,29 @@ global_settings {
   assumed_gamma 1.0
 }
 
-
-#declare RoomHeight = 1.0;
-
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
 #declare TileSize      = 0.5;
+
+#declare RoomHeight = 1.0;
+#declare LocalLightHeight  = 0.6*RoomHeight;
+#declare GlobalLightHeight = 0.6*RoomHeight;
+
+#declare DoorThickness = 0.03;
+#declare DoorSize = 0.25;
+
 //#declare CameraHeight  = 0.7; 
 #declare CameraHeight  = 4.0; 
+#declare LookAtHeight  = TileSize;
 #declare CamDistX = -0.1; // = -1;
 #declare CamDistY = 4; // =  5;
-#declare LocalLightColor = color <1.0,0.75,0.5>;
+
+#declare LocalLightColor = color <1.0,0.65,0.2>;
 #declare GlobalLightColor = White;
 
-#declare Brown1 = color <.25,.125,0.0>;
-#declare Brown2 = color <.3,.25,.2>;
+#declare Brown1 = color <.25,.20,0.15>;
+#declare Brown2 = color <.3,.275,.25>;
 #declare Brown3 = color <.4,.35,.3>;
 #declare Brown4 = color <.5,.45,.4>;
 #declare Brown5 = color <.8,.75,.7>;
@@ -56,7 +63,6 @@ global_settings {
          phong 1
          phong_size 100
          brilliance 3
-         ambient 0.2
          diffuse 0.8
       }
       pigment {
@@ -64,10 +70,10 @@ global_settings {
          turbulence 0.025
 
          color_map {
-            [0.0 0.15 color Brown2 color Brown4 ]
-            [0.15 0.40 color Brown4 color Brown5 ]
-            [0.40 0.80 color Brown5 color Brown4 ]
-            [0.80 1.01 color Brown4 color Brown2 ]
+            [0.0  0.30 color Brown2 color Brown4 ]
+            [0.30 0.40 color Brown4 color Brown5 ]
+            [0.40 0.50 color Brown5 color Brown4 ]
+            [0.85 1.01 color Brown4 color Brown2 ]
          }
 
          scale <3.5, 1, 1>
@@ -80,16 +86,16 @@ global_settings {
 
 #declare WallTexture = texture {
   pigment {
-    agate color_map{[0.0 0.3*White][1.0 0.5*White]}
+    agate color_map{[0.0 0.3*White][1.0 0.4*White]}
   }
-  normal { agate 0.5 }
-  scale 0.1
+  normal { agate 0.8 }
+  scale 0.05
 }
   
 #declare FloorTexture = texture {
   pigment {
     //crackle color_map{[0.0 0.2*White][1.0 0.5*White]}
-    crackle color_map{[0.0 0.2*White][0.1 0.2*White][0.3 0.5*White][1.0 0.5*White]}
+    crackle color_map{[0.0 0.4*Brown2][0.1 0.5*Brown2][0.3 0.4*White][1.0 0.4*White]}
   }
   normal { crackle 1.6 }
   scale <0.1,0.05,0.1>
@@ -121,13 +127,19 @@ global_settings {
 }
 
 
+#declare FountainDish =  union {
+  cylinder  { <0,0,0>,<0,0.0,0.1>,0.5 texture {Water} }
+  cylinder  { <0,0,0>,<0,0.0,0.08>,0.55 texture { White_Marble } }
+}
+
 #declare Fountain =  union {
-  cylinder  { <0,0,0>,<0,0.0,0.1>,0.5 pigment { color Blue } }
-  cylinder  { <0,0,0>,<0,0.0,0.08>,0.55 pigment { color White } }
+  cylinder  { <0,0,0>,<0,0.0,0.9>,0.05 texture { White_Marble } }
+  object { FountainDish }
+  object { FountainDish scale <0.5,0.5,0.8> translate 0.6*z }
 }
 
 // debug: origin
-cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
+// cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
 
 #declare Floor =
   box {
@@ -153,14 +165,20 @@ cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
   no_shadow
 }
 
+
 #declare Door = union {
-  box { <-0.25, -0.05, 0.0 >,< 0.25, 0.05, 0.6*RoomHeight>}
-  cylinder { <0.0, -0.05, 0.6*RoomHeight>,<0.0, 0.05, 0.6*RoomHeight>,0.25 }
+  box { <-DoorSize, -DoorThickness, 0.0 >,< DoorSize, DoorThickness, 0.6*RoomHeight>}
+  cylinder { <0.0, -DoorThickness, 0.6*RoomHeight>,<0.0, DoorThickness, 0.6*RoomHeight>,DoorSize }
+}
+
+#declare DoorHole = union {
+  box { <-DoorSize, -1, 0.0 >,< DoorSize, 1, 0.6*RoomHeight>}
+  cylinder { <0.0, -1, 0.6*RoomHeight>,<0.0, 1, 0.6*RoomHeight>,DoorSize }
 }
 
 #declare BrokenDoor = difference {
   object { Wall }
-  object { Door scale <1,3,1> }
+  object { DoorHole }
   texture { WallTexture }
 }
 
@@ -171,14 +189,14 @@ cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
 
 #declare OpenDoor = union {
   object { BrokenDoor }
-  object { Door texture { DoorTexture } rotate 90*z translate <-0.25,-0.25,0> }
+  object { Door texture { DoorTexture } rotate 90*z translate <-DoorSize,-DoorSize,0> }
 }
 
 // 
 // torch carried by our hero
 //
 #declare LocalLight =  light_source { 
-    <0,0,RoomHeight-0.1>, LocalLightColor
+    <0,0, LocalLightHeight>, LocalLightColor
     spotlight
     radius 40
     falloff 70 
@@ -186,7 +204,7 @@ cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
 }
 
 #declare GlobalLight =  light_source { 
-    <0, 0, RoomHeight-0.1>, 0.2*GlobalLightColor
+    <0, 0, GlobalLightHeight>, 0.3*GlobalLightColor
     area_light 1*x, 1*y, 5, 5
 }
 

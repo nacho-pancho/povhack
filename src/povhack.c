@@ -45,6 +45,7 @@ int main ( int argc, char * argv[] ) {
     terminal_t* term = terminal_init();
     terminal_t* prev_term = terminal_init();
     int frame_number = 0;
+    int video_number = 0;
     while (!feof(fin)) {
       int c = fgetc(fin);
       terminal_put(term,c);
@@ -75,14 +76,17 @@ int main ( int argc, char * argv[] ) {
 	  fclose(fdump);
 	}
 	//
-	// generate POV file
+	// generate POV file(s)
 	//
-	snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,frame_number);
-	FILE* fout = fopen(ofname,"w");
-	if (!fout) exit(1);
-	double T = 1.0;	
-	map_to_pov(term,prev_term,frame_number,T,&cfg,fout);
-	fclose(fout);
+	double step = 1.0/(double)cfg.submaps;
+	for (double T = step; T <= 1.0; T += step) {
+	  snprintf(ofname,127,"%s_%08d.pov",cfg.output_prefix,video_number);
+	  FILE* fout = fopen(ofname,"w");
+	  if (!fout) exit(1);
+	  map_to_pov(term,prev_term,frame_number,T,&cfg,fout);
+	  fclose(fout);
+	  video_number ++;
+	}
 	//
 	// move on
 	//
@@ -376,7 +380,7 @@ void map_to_pov(terminal_t* term,
 	fprintf ( outf, "  right (1920/1080)*x\n" );
 	fprintf ( outf, "  sky z\n" );
 	fprintf ( outf, "  location < %7.3f+CamDistX, %7.3f+CamDistY, CameraHeight> \n", x, y);
-	fprintf ( outf, "  look_at  < %7.3f, %7.3f, 0.5>\n", x, y );
+	fprintf ( outf, "  look_at  < %7.3f, %7.3f, LookAtHeight>\n", x, y );
 	fprintf ( outf, "}\n" );
       }      
     } // for x
