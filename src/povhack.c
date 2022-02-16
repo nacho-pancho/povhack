@@ -11,20 +11,18 @@
 #include "nethack.h"
 #include "motion.h"
 #include "terminal.h"
+#include "status.h"
 
 //------------------------------------------------------------
 /**
  * most important function of this program
  */
-void map_to_pov(map_t* prev_map,
-		  map_t* curr_map,
-		  const config_t* cfg,
-		  double time,
-		  FILE* outf );
+void map_to_pov(terminal_t* term,
+		int frame,
+		double time,
+		const config_t* cfg,
+		FILE* outf );
 
-//------------------------------------------------------------
-
-int get_game_time(terminal_t* term);
 
 //------------------------------------------------------------
 
@@ -32,72 +30,79 @@ int main ( int argc, char * argv[] ) {
     config_t cfg = parse_opt ( argc, argv );
     
     char ofname[128];
-    FILE * inf = NULL;
+    FILE * fin = NULL;
     
     printf ( "POVHACK\n" );
     //
     //
-    inf = fopen ( cfg.input_file, "r" );
-    if (!inf) {
+    fin = fopen ( cfg.input_file, "r" );
+    if (!fin) {
       fprintf(stderr,"could not open file %s for reading.\n",cfg.input_file);
       exit(1);
     }
-    //
-    // prepare TTY info
-    //
-    tty vt = tty_init ( 80, 24, 0 ); // 80x24, not resizable
-    tty_reset ( vt );
-    //
-    // our info
-    //
-    map_t* map, *prev_map;
-    map = map_init(25,80);
+
+    terminal_t* term = terminal_init();
+    int frame_number = 0;
+    map_t* prev_map;
     prev_map = map_init(25,80);
-    map_reset(map);
-    map_reset(prev_map);
-    
-    
-    int game_map = 0;
-    int video_map = 0;
-    int prev_time = -1;
-    while ( !feof ( inf ) ) {
-    } // while
-    
-    printf ( "processed %d game maps\n", game_map );
-    printf ( "wrote %d video maps\n", video_map );
-    fclose ( inf );
-    tty_free ( vt );
-    map_free ( prev_map );
-    map_free (map);
+    while (!feof(fin)) {
+      int c = fgetc(fin);
+      terminal_put(term,c);
+      if (term->data_has_ended) {
+	//
+	// dump current windows
+	//
+	status_t s = get_status(term);
+	printf("\n====================\n");
+	printf("END OF DATA: FRAME %4d TIME %4d\n",frame_number,s.moves);
+	printf("====================\n");
+	print_status(&s);
+	detect_motion(term->map,prev_map);
+	for (int w = 1; w <= WIN_INVEN; ++w) {
+	  printf("\nWINDOW NUMBER %4d\n",w);
+	  window_dump(term->windows[w],stdout);
+	}
+	printf("\nMAP\n");
+	map_dump(term->map,stdout);
+	//
+	// generate POV file
+	//
+	snprintf(ofname,127,"%s_%06d.pov",cfg.output_prefix,frame_number);
+	FILE* fout = fopen(ofname,"w");
+	if (!fout) exit(1);
+	double T = 1.0;	
+	map_to_pov(term,frame_number,T,&cfg,fout);
+	fclose(fout);
+	//
+	// move on
+	//
+	map_copy(prev_map,term->map);
+	term->data_has_ended = 0;
+	frame_number++;
+      }
+    }
+
+    fclose ( fin );
+    terminal_free(term);
+    map_free(prev_map);
     exit ( 0 );
 }
 
-int get_game_time(terminal_t* term) {
-  window_t* win = term->windows[WIN_STATUS];
-  char* status = win->ascii + 24*win->ncols;
-  status[win->ncols-1] = 0; // make this line a propoer null ended C string
-  char* off = strstr(status,"T:");
-  if (!off) { return -1; }
-  else {
-    int pepe;
-    sscanf(off+2,"%d ",&pepe);
-    return pepe;
-  }
-}
 
 //------------------------------------------------------------
 
-void map_to_pov(map_t* prev_map,
-		  map_t* curr_map,
-		  const config_t* cfg,
-		  double T,
-		  FILE* outf ) {
-
+void map_to_pov(terminal_t* term,
+		int frame,
+		double time,
+		const config_t* cfg,
+		FILE* outf ) {
+  
   fprintf ( outf, "#version 3.7;\n" );
-  fprintf ( outf, "#declare GameFrame = %d;\n", curr_map->number );
-  fprintf ( outf, "#declare GameSubFrame = %f;\n", T );
+  fprintf ( outf, "#declare GameFrame = %d;\n", frame );
+  fprintf ( outf, "#declare GameSubFrame = %f;\n", time );
   fprintf ( outf, "#include \"%s\"\n", cfg->tileset_file );
-
+#if 0
+  
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
         for ( int x1 = 0 ; x1 < curr_map->ncols ; ++x1 ) {
 	  // current info on this glyph
@@ -183,5 +188,5 @@ void map_to_pov(map_t* prev_map,
 	  }
         }
     }
-
+#endif
 }

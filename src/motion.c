@@ -10,18 +10,12 @@ void detect_motion(map_t* map, map_t* prev_map) {
   for (int y = 1; y < 22; ++y) {
     for (int x = 0; x < 80; ++x) {
       glyph_t* target = map_get_monster(map,x,y);
-      char tc = target->ascii;
       int tg = target->code;
-
       int found = 0;
-      // these don't move
-      if (!is_monster(tc)) {
-	target->dx = 0;
-	target->dy = 0;
-	target->tele = 0;
+      if (!target->code) {
+	target->dx = target->dy = target->tele = 0;
 	continue;
       }
-      //printf("motion of character %c (glyph %d) at i=%d j=%d :",tc,tg, i,j);
       //
       // we search for matching glyphs
       // this is more robust than chars
@@ -31,7 +25,6 @@ void detect_motion(map_t* map, map_t* prev_map) {
 	target->dx = 0;
 	target->dy = 0;
 	target->tele = 0;
-	//printf("none.\n");
 	continue;
       }
       

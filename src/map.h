@@ -31,6 +31,7 @@ typedef struct {
 
 map_t* map_init(int nr, int nc);
 
+glyph_t* map_get(map_t* f, int l, int x, int y);
 glyph_t* map_get_dungeon(map_t* f, int x, int y);
 glyph_t* map_get_object(map_t* f, int x, int y);
 glyph_t* map_get_monster(map_t* f, int x, int y);

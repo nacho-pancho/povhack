@@ -3,7 +3,7 @@
 #include <string.h>
 
 status_t get_status(terminal_t* term) {
-  status_t s;
+  status_t s = {0,0,0,0,0,0,0,0,0};
   window_t* win = term->windows[WIN_STATUS];
   char* status = win->ascii + 24*win->ncols;
   status[win->ncols-1] = 0; // make this line a propoer null ended C string
