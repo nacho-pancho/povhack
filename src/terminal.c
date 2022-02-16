@@ -49,6 +49,17 @@ void terminal_reset(terminal_t* f) {
   map_reset(f->map);
 }
 
+void terminal_copy(terminal_t* dst, const terminal_t* src) {
+  dst->current_window      = src->current_window;
+  dst->current_glyph_code  = src->current_glyph_code;
+  dst->current_glyph_flags = src->current_glyph_flags;
+  dst->data_has_ended      = src->data_has_ended;
+  dst->is_glyph            = src->is_glyph;
+  for (int w = 0; w < NWINDOWS; ++w) {
+    window_copy(dst->windows[w],dst->windows[w]);
+  }
+  map_copy(dst->map,src->map);
+}
 
 typedef struct {
   int16_t par[7];

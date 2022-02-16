@@ -18,6 +18,7 @@
  * most important function of this program
  */
 void map_to_pov(terminal_t* term,
+		terminal_t* prev_term,
 		int frame,
 		double time,
 		const config_t* cfg,
@@ -42,9 +43,8 @@ int main ( int argc, char * argv[] ) {
     }
 
     terminal_t* term = terminal_init();
+    terminal_t* prev_term = terminal_init();
     int frame_number = 0;
-    map_t* prev_map;
-    prev_map = map_init(25,80);
     while (!feof(fin)) {
       int c = fgetc(fin);
       terminal_put(term,c);
@@ -53,7 +53,7 @@ int main ( int argc, char * argv[] ) {
 	// dump current windows
 	//
 	status_t s = get_status(term);
-	detect_motion(term->map,prev_map);
+	detect_motion(term->map,prev_term->map);
 	if (cfg.dump) {
 	  snprintf(ofname,127,"%s_%06d.dump",cfg.output_prefix,frame_number);
 	  FILE* fdump = fopen(ofname,"w");
@@ -81,20 +81,20 @@ int main ( int argc, char * argv[] ) {
 	FILE* fout = fopen(ofname,"w");
 	if (!fout) exit(1);
 	double T = 1.0;	
-	map_to_pov(term,frame_number,T,&cfg,fout);
+	map_to_pov(term,prev_term,frame_number,T,&cfg,fout);
 	fclose(fout);
 	//
 	// move on
 	//
-	map_copy(prev_map,term->map);
 	term->data_has_ended = 0;
+	terminal_copy(prev_term,term);
 	frame_number++;
       }
     }
 
     fclose ( fin );
     terminal_free(term);
-    map_free(prev_map);
+    terminal_free(prev_term);
     exit ( 0 );
 }
 
@@ -177,6 +177,7 @@ static void put_trap(int x, int y, FILE* outf) {
 }
 
 void map_to_pov(terminal_t* term,
+		terminal_t* prev_term,
 		int frame,
 		double time,
 		const config_t* cfg,
@@ -308,6 +309,7 @@ void map_to_pov(terminal_t* term,
   fprintf(outf,"//\n// MONSTERS \n//\n");
   double hx = map->hero_x;
   double hy = map->hero_y;
+  map_t* prev_map = prev_term->map;
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
     for ( int x1 = 0 ; x1 < map->ncols ; ++x1 ) {
       int is_hero = (x1 == hx) && (y1 == hy);
@@ -322,7 +324,7 @@ void map_to_pov(terminal_t* term,
       // is located at its previous position (given by displacement)
       const int x0 = x1 - g1->dx;
       const int y0 = y1 - g1->dy;
-      const glyph_t* g0 = map_get_monster(map,x0,y0);
+      const glyph_t* g0 = map_get_monster(prev_map,x0,y0);
       double dx0, dy0;
       double dx, dy;
       double angle;
@@ -330,7 +332,7 @@ void map_to_pov(terminal_t* term,
       const double T = time;
       if (g0->code != g1->code) {
 	// not same glyph!
-	warn("not same glyph!\n");
+	warn("frame %06d: not same glyph g1:%4d %c g0:%4d %c !\n",frame,g1->code,g1->ascii,g0->code,g0->ascii);
 	dx0 = dx1;
 	dy0 = dy1;
 	x = (1.0-T)*x0 + T*x1;
