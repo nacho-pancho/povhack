@@ -205,7 +205,6 @@ void map_to_pov(terminal_t* term,
       switch(g->ascii) {
       case '.':
 	if (is_door(map,x1,y1)) {
-	  printf(". is a door\n");
 	  switch (is_door(map,x1,y1)) { 
 	  case H_DOOR_BROKEN:
 	    put_broken_door(x1,y1, 0,outf);
@@ -221,7 +220,6 @@ void map_to_pov(terminal_t* term,
 	
       case '-':
 	if (is_door(map,x1,y1)) {
-	  printf("- is a door\n");
 	  put_open_door(x1,y1,90, outf);
 	} else if (is_corner(map,x1,y1)) {
 	  switch (is_corner(map,x1,y1)) {
@@ -248,7 +246,6 @@ void map_to_pov(terminal_t* term,
 	
       case '|':
 	if (is_door(map,x1,y1)) {
-	  printf("| is a door\n");
 	  put_open_door(x1,y1,0,outf);
 	} else if (is_wall(map,x1,y1)) {
 	  put_wall(x1,y1,90,outf);
@@ -263,15 +260,12 @@ void map_to_pov(terminal_t* term,
 	  // could be something else
 	  break;
 	case H_DOOR_CLOSED:
-	  printf("+ is a door\n");
 	  put_closed_door(x1,y1, 0,outf);
 	  break;
 	case V_DOOR_CLOSED:
-	  printf("+ is a door\n");
 	  put_closed_door(x1,y1,90,outf);
 	  break;
 	default:
-	  printf("+ is a wtf door\n");
 	  put_floor(x1,y1,outf);
 	  break;
 	}
@@ -313,6 +307,7 @@ void map_to_pov(terminal_t* term,
       if (g->code == 0) {
 	continue;
       }
+      put_floor(x1,y1,outf);
       fprintf ( outf, "object { Tiles[%d][%d] ", g->ascii, g->color);	  
       fprintf( outf, " translate < %2d, %2d,  0> }\n", x1, y1);
     }
@@ -344,6 +339,7 @@ void map_to_pov(terminal_t* term,
       double angle;
       double x, y;
       const double T = time;
+      put_floor(x1,y1,outf);
       if (g0->code != g1->code) {
 	// not same glyph!
 	warn("frame %06d: not same glyph g1:%4d %c g0:%4d %c !\n",frame,g1->code,g1->ascii,g0->code,g0->ascii);

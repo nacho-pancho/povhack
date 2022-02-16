@@ -133,7 +133,6 @@ int is_door(map_t* map, int x, int y) {
   // an unbroken door is a white | or - character
   // open doors
   glyph_t* g = map_get_dungeon(map,x,y);
-  printf("is door char %c color %d ?\n",g->ascii,g->color);
   if ((g->ascii == '-') && ((g->color & 0x07) == 3)) {
     return V_DOOR_OPEN;
   }
@@ -200,9 +199,9 @@ int is_corner(map_t* map, int x, int y) {
   if ((g->ascii != '-') || (g->color & 0x08) != 0) 
     return NO_CORNER;
   // 
-  
-  int nwall = is_wall(map,x,y-1);
-  int swall = is_wall(map,x,y+1);
+  // pending: may be a door
+  int nwall = is_wall(map,x,y-1) || is_door(map,x,y-1);
+  int swall = is_wall(map,x,y+1) || is_door(map,x,y+1);
   if (!nwall && !swall) {
     return NO_CORNER;
   }

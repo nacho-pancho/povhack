@@ -18,18 +18,19 @@ global_settings {
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
 #declare TileShift     = 0.0;
-#declare TileSize      = 1.0;
+#declare TileSize      = 0.5;
 //#declare CameraHeight  = 0.7; 
-#declare CameraHeight  = 8.0; 
-#declare CamDistX = -2;
-#declare CamDistY =  5;
+#declare CameraHeight  = 4.0; 
+#declare CamDistX = -0.1; // = -1;
+#declare CamDistY = 4; // =  5;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
 
-#declare Brown1 = color <.2,.15,.1>;
+#declare Brown1 = color <.25,.125,0.0>;
 #declare Brown2 = color <.3,.25,.2>;
 #declare Brown3 = color <.4,.35,.3>;
-#declare Brown4 = color <.5,.475,.45>;
+#declare Brown4 = color <.5,.45,.4>;
+#declare Brown5 = color <.8,.75,.7>;
 
 #declare TileTexture = texture {
   pigment { color White }
@@ -64,8 +65,8 @@ global_settings {
 
          color_map {
             [0.0 0.15 color Brown2 color Brown4 ]
-            [0.15 0.40 color Brown4 color Clear ]
-            [0.40 0.80 color Clear  color Brown4 ]
+            [0.15 0.40 color Brown4 color Brown5 ]
+            [0.40 0.80 color Brown5 color Brown4 ]
             [0.80 1.01 color Brown4 color Brown2 ]
          }
 
@@ -131,6 +132,12 @@ cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
 #declare Floor =
   box {
     < -0.51, -0.51, -0.01 >,< 0.51, 0.51, 0.0 >
+    texture { FloorTexture }
+  }
+
+#declare Trap =
+  box {
+    < -0.7, -0.7, -0.21 >,< 0.7, 0.7, -0.2 >
     texture { FloorTexture }
   }
 
@@ -226,9 +233,9 @@ cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
     #declare BaseTile = text { 
       ttf TileFont chr(code) TileThickness, TileShift 
       texture { TileTexture pigment { ANSIColors[col] } }            
-      translate <-0.0, 0.2, -0.5*TileThickness>
-      scale TileSize
       rotate 90*x // from x,y plane to x,z plane
+      translate <-0.25, 0.5*TileThickness, 0.2>
+      scale TileSize
     }
     #declare Tiles[code][col] = BaseTile
    #end
