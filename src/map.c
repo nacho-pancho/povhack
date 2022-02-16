@@ -1,7 +1,35 @@
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "map.h"
 #include "util.h"
+
+int is_monster(glyph_t* g) {
+  char c = g->ascii;
+  char sym[] = {'@','~','&','\'',':',';',0};
+  if (isalpha(c)) return 1;
+  for (int i = 0; sym[i] != 0; ++i) {
+    if (c == sym[i]) return 1;
+  }
+  return 0;
+}
+
+int is_structure(glyph_t* g) {
+  char sym[] = {'|','-','+',0};
+  char c = g->ascii;
+  for (int i = 0; sym[i] != 0; ++i) {
+    if (c == sym[i]) return 1;
+  }
+  return 0;
+}
+
+int is_effect(glyph_t* g) {
+  return 0;
+}
+
+int is_object(glyph_t* g) {
+  return 0;
+}
 
 glyph_t* map_get_dungeon(map_t* f, int x, int y) {
   return f->dungeon + y*f->ncols + x;
@@ -70,6 +98,7 @@ void map_copy(map_t* dst, const map_t* src) {
 
 
 //------------------------------------------------------------
+
 int infer_layer(glyph_t g) {
   return DUNGEON_LAYER;
 }

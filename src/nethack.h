@@ -1,17 +1,6 @@
 #ifndef NETHACK_H
 #define NETHACK_H
 
-//
-// NetHack TileData command info
-//
-#define NH_CMD_START_GLYPH    0
-#define NH_CMD_END_GLYPH      1
-#define NH_CMD_SELECT_WINDOW  2
-#define NH_CMD_END_FRAME      3
-
-#define is_start_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_START_GLYPH))
-#define is_end_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_GLYPH))
-#define is_end_map(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_FRAME))
 
 #define FLAG_CORPSE        0x0001
 #define FLAG_INVISIBLE     0x0002
@@ -27,7 +16,6 @@
 #define FLAG_FEMALE        0x0800
 #define FLAG_BADCOORDS     0x1000
 
-int is_monster(char c);
-int is_structure(char c);
+
 
 #endif

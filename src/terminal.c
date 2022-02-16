@@ -2,6 +2,18 @@
 #include "terminal.h"
 //#define DEBUG_TERM
 
+//
+// NetHack TileData command info
+//
+#define NH_CMD_START_GLYPH    0
+#define NH_CMD_END_GLYPH      1
+#define NH_CMD_SELECT_WINDOW  2
+#define NH_CMD_END_FRAME      3
+
+#define is_start_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_START_GLYPH))
+#define is_end_glyph(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_GLYPH))
+#define is_end_map(v) (((v)->cmd == VT_CMD_TILEDATA) && ((v)->par[1] == NH_CMD_END_FRAME))
+
 terminal_t* terminal_init() {
   terminal_t* out = (terminal_t*) malloc(sizeof(terminal_t));
   out->current_window = 0;
