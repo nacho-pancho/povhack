@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
       printf("\n====================\n");
       printf("END OF DATA: FRAME %4d TIME %4d\n",frame_number,s.moves);
       printf("====================\n");
-      print_status(&s);
+      print_status(&s,stdout);
       detect_motion(term->map,prev_map);
       for (int w = 1; w <= WIN_INVEN; ++w) {
 	printf("\nWINDOW NUMBER %4d\n",w);

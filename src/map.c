@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include "map.h"
 #include "util.h"
+#include "logging.h"
 
 glyph_t* map_get(map_t* f, int l, int x, int y) {
   return f->layers[l] + y*f->ncols + x;
@@ -76,6 +77,12 @@ void map_copy(map_t* dst, const map_t* src) {
 
 //------------------------------------------------------------
 
+int is_empty(glyph_t* g) {
+  return (g->code == 0);
+}
+
+//------------------------------------------------------------
+
 int is_monster(glyph_t* g) {
   char c = g->ascii;
   char sym[] = {'@','~','&','\'',':',';',0};
@@ -107,6 +114,7 @@ int is_effect(glyph_t* g) {
   return 0;
 }
 
+//------------------------------------------------------------
 int is_object(glyph_t* g) {
   char sym[] = {'"','[','0','`','$','%','*','!','=','?','(','/',')',0};
   char c = g->ascii;
@@ -120,6 +128,105 @@ int is_object(glyph_t* g) {
   return 0;
 }
 
+//------------------------------------------------------------
+int is_door(map_t* map, int x, int y) {
+  // an unbroken door is a white | or - character
+  // open doors
+  glyph_t* g = map_get_dungeon(map,x,y);
+  if ((g->ascii == '-') && ((g->color & 0x07) == 3)) {
+    return V_DOOR_OPEN;
+  }
+  if ((g->ascii == '|') && ((g->color & 0x07) == 3)) {
+    return H_DOOR_OPEN;
+  }
+  
+  // closed doors
+  if ((g->ascii == '+') && ((g->color & 0x07) == 3)) {
+    if (is_wall(map,x,y-1) || is_wall(map,x,y+1)) {
+      return V_DOOR_CLOSED;
+    } else if (is_wall(map,x-1,y) || is_wall(map,x+1,y)) {
+      return H_DOOR_CLOSED;
+    } else {
+      // cannot rely on walls; try floor
+      char n = map_get_dungeon(map,x,y-1)->ascii;
+      char s = map_get_dungeon(map,x,y+1)->ascii;
+      char w = map_get_dungeon(map,x-1,y)->ascii;
+      char e = map_get_dungeon(map,x+1,y)->ascii;
+      if ((n == '#') || (s == '#')) {
+	return H_DOOR_CLOSED;
+      } else if ((e == '#') || (w == '#')) {
+	return V_DOOR_CLOSED;
+      } else {
+	warn("cannot determine orientation of door n=%c s=%c w=%c e=%c\n", n, s, w, e);
+	return NO_DOOR;
+      }
+    }
+  }
+  // broken door
+  if (g->ascii == '.') {
+    if (is_wall(map,x,y-1) && is_wall(map,x,y+1)) {
+      return V_DOOR_BROKEN;
+    } else if (is_wall(map,x-1,y) && is_wall(map,x+1,y)) {
+      return H_DOOR_BROKEN;
+    } else {
+      return NO_DOOR;
+    }
+  }
+  return NO_DOOR;
+}
+
+//------------------------------------------------------------
+
+int is_wall(map_t* map, int x, int y) {
+  glyph_t* g = map_get_dungeon(map,x,y);
+  // must be a white | or - character
+  if ((g->color & 0x08) != 0)
+    return NO_WALL;
+  if (g->ascii == '-')
+    return H_WALL;
+  else if (g->ascii == '|')
+    return V_WALL;
+  else
+    return NO_WALL;
+}
+
+//------------------------------------------------------------
+
+
+int is_corner(map_t* map, int x, int y) {
+  glyph_t* g = map_get_dungeon(map,x,y);
+  // basic check
+  if ((g->ascii != '-') || (g->color & 0x08) != 0) 
+    return NO_CORNER;
+  // 
+  
+  int nwall = is_wall(map,x,y-1);
+  int swall = is_wall(map,x,y+1);
+  if (!nwall && !swall) {
+    return NO_CORNER;
+  }
+  // it is a corner
+  // now try to determine orientation
+  if (nwall && swall) { // all-sides corner
+    return ALL_CORNER;
+  } else if (swall) { // a wall to the south
+    // either NW or NE corner
+    if (is_wall(map,x+1,y) || is_door(map,x+1,y)) {
+      return NW_CORNER;
+    } else {
+      return NE_CORNER;
+    }
+  } else { // a wall to the north
+    // either SW or SE corner
+    if (is_wall(map,x+1,y) || is_door(map,x+1,y)) {
+      return SW_CORNER;
+    } else {
+      return SE_CORNER;
+    }
+  }
+}
+
+//------------------------------------------------------------
 int infer_layer(glyph_t* g) {
   if (is_structure(g)) {
     return DUNGEON_LAYER;
@@ -166,7 +273,7 @@ void map_set_hero_position(map_t* map, int x, int y) {
 
 void map_dump(map_t* map, FILE* out) {
   for (int l = 0; l < NLAYERS; ++l) {
-    printf("LAYER %d\n",l);
+    fprintf(out,"LAYER %d\n",l);
     hruler(out,map->ncols);
     for (int y = 0; y < map->nrows; y++) {
       vruler(y,out);
@@ -189,10 +296,14 @@ void map_dump_motion(map_t* map, FILE* out) {
     vruler(y,out);
     for (int x = 0; x < map->ncols; x++) {
       glyph_t* g = map_get(map,MONSTERS_LAYER,x,y);
-      const int dx = g->dx > 0 ? 1: (g->dx < 0 ? -1 : 0);
-      const int dy = g->dy > 0 ? 1: (g->dy < 0 ? -1 : 0);
-      const char sym[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} };
-      fputc(sym[dy+1][dx+1], out);
+      if (g->code == 0) {
+	fputc(' ',out);
+      } else {
+	const int dx = g->dx > 0 ? 1: (g->dx < 0 ? -1 : 0);
+	const int dy = g->dy > 0 ? 1: (g->dy < 0 ? -1 : 0);
+	const char sym[3][3] = { {'y','k','u'}, {'h','.','l'}, {'b','j','n'} };
+	fputc(sym[dy+1][dx+1], out);
+      }
     }
     vruler(y,out);
     fputc('\n',out);

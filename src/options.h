@@ -17,6 +17,7 @@ typedef struct config {
     const char * tileset_file;
     const char * output_prefix;
   int submaps;
+  int dump;
 } config_t;
 
 config_t parse_opt ( int argc, char* * argv );

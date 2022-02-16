@@ -1,5 +1,6 @@
 #ifndef STATUS_H
 #define STATUS_H
+#include <stdio.h>
 
 typedef struct {
   int level;
@@ -16,6 +17,6 @@ typedef struct {
 
 status_t get_status(terminal_t* term);
 
-void print_status(status_t* s);
+void print_status(status_t* s, FILE* out);
 
 #endif

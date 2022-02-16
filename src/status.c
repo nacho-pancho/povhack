@@ -1,6 +1,7 @@
 #include "terminal.h"
 #include "status.h"
 #include <string.h>
+#include <stdio.h>
 
 status_t get_status(terminal_t* term) {
   status_t s = {0,0,0,0,0,0,0,0,0};
@@ -12,12 +13,12 @@ status_t get_status(terminal_t* term) {
   return s;
 }
 
-void print_status(status_t* s) {
-  printf("level     : %d\n",s->level);
-  printf("coins     : %d\n",s->coins);
-  printf("health    : %d of %d\n",s->hp, s->maxhp);
-  printf("power     : %d of %d\n",s->pw, s->maxpw);
-  printf("xp. level : %d\n",s->xplevel);
-  printf("xp. points: %d\n",s->xppoints);
-  printf("game moves: %d\n",s->moves);
+void print_status(status_t* s, FILE* out) {
+  fprintf(out,"level     : %d\n",s->level);
+  fprintf(out,"coins     : %d\n",s->coins);
+  fprintf(out,"health    : %d of %d\n",s->hp, s->maxhp);
+  fprintf(out,"power     : %d of %d\n",s->pw, s->maxpw);
+  fprintf(out,"xp. level : %d\n",s->xplevel);
+  fprintf(out,"xp. points: %d\n",s->xppoints);
+  fprintf(out,"game moves: %d\n",s->moves);
 } 

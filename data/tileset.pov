@@ -112,13 +112,18 @@ global_settings {
 }
 
 #declare Corner = union { 
-  // default rotation is lower left corner (southwest)
-  box { < 0.1, -0.1, 0.0 >,< 0.51, 0.1, RoomHeight> }
-  box { <-0.1,   0.1, 0.0 >,< 0.1, -0.51, RoomHeight> }
+  // default rotation is upper left corner (northwest)
+  // remember: Z increases downwards
+  box { < -0.1, -0.1, 0.00 >,< 0.51,  0.10, RoomHeight> }
+  box { < -0.1, -0.1, 0.00 >,< 0.10,  0.51, RoomHeight> }
   texture { WallTexture }
 }
 
-#declare Fountain =  cylinder  { <0,0,0>,<0,0.1,0>,0.5 pigment { color Blue } }
+
+#declare Fountain =  union {
+  cylinder  { <0,0,0>,<0,0.0,0.1>,0.5 pigment { color Blue } }
+  cylinder  { <0,0,0>,<0,0.0,0.08>,0.55 pigment { color White } }
+}
 
 #declare Floor =
   box {
@@ -137,6 +142,28 @@ global_settings {
   no_image
   no_shadow
 }
+
+#declare Door = union {
+  box { <-0.25, -0.08, 0.0 >,< 0.25, 0.08, 0.6*RoomHeight>}
+  cylinder { <0.0, -0.08, 0.6*RoomHeight>,<0.0, 0.08, 0.6*RoomHeight>,0.25 }
+}
+
+#declare BrokenDoor = difference {
+  object { Wall }
+  object { Door scale <1,1.2,1> }
+  texture { WallTexture }
+}
+
+#declare ClosedDoor = union {
+  object { BrokenDoor }
+  object { Door texture { DoorTexture } }
+}
+
+#declare OpenDoor = union {
+  object { BrokenDoor }
+  object { Door texture { DoorTexture } rotate 90*z translate <-0.25,-0.25,0> }
+}
+
 // 
 // torch carried by our hero
 //

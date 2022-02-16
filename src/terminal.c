@@ -1,5 +1,7 @@
 #include <ctype.h>
 #include "terminal.h"
+#include "logging.h"
+
 //#define DEBUG_TERM
 
 //
@@ -181,10 +183,8 @@ static void erase_display(terminal_t* f,cmd_t* cmd) {
     }
     break;
   case 3: // erase saved lines
-    printf("WARNING: unhandled: erase saved display\n");
     return;
   default:
-    printf("WARNING: unhandled: erase display subcommand %d\n",cmd->par[0]);
     return;
   }
 }
@@ -227,10 +227,8 @@ static void erase_line(terminal_t* f,cmd_t* cmd) {
     }
     break;
   case 3: // erase saved lines
-    printf("WARNING: unhandled: erase saved lines\n");
     return;
   default:
-    printf("WARNING: unhandled: erase line subcommand %d\n",cmd->par[0]);
     return;
   }
 }
@@ -270,11 +268,10 @@ static void set_style(terminal_t* f,cmd_t* cmd) {
  */ 
 static void end_data(terminal_t* f) {
 #ifdef DEBUG_TERM
-  printf("END DATA\n.");
+  printf("END DATA: w=%d x=%d y=%d\n",
+	 f->current_window,w->cx,w->cy);
 #endif
   window_t* w = CW(f);
-  printf("end data. current window %d x=%d y=%d\n",
-	 f->current_window,w->cx,w->cy);
   if (f->current_window == WIN_MAP) {
     map_set_hero_position(f->map,w->cx,w->cy);
   }
@@ -313,7 +310,7 @@ static void tiledata(terminal_t* f,cmd_t* cmd) {
 }
 
 static void unhandled_command(terminal_t* f,cmd_t* cmd) {
-  printf("WARNING: unhandled command:");
+  warn("unhandled command:");
   print_cmd(cmd);
 }
 

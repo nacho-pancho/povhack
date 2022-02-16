@@ -53,17 +53,27 @@ int main ( int argc, char * argv[] ) {
 	// dump current windows
 	//
 	status_t s = get_status(term);
-	printf("\n====================\n");
-	printf("END OF DATA: FRAME %4d TIME %4d\n",frame_number,s.moves);
-	printf("====================\n");
-	print_status(&s);
 	detect_motion(term->map,prev_map);
-	for (int w = 1; w <= WIN_INVEN; ++w) {
-	  printf("\nWINDOW NUMBER %4d\n",w);
-	  window_dump(term->windows[w],stdout);
+	if (cfg.dump) {
+	  snprintf(ofname,127,"%s_%06d.dump",cfg.output_prefix,frame_number);
+	  FILE* fdump = fopen(ofname,"w");
+	  if (!fdump) {
+	    error("cannot open %s for writing.\n",ofname);
+	  }
+	  fprintf(fdump,"\n====================\n");
+	  fprintf(fdump,"END OF DATA: FRAME %4d TIME %4d\n",frame_number,s.moves);
+	  fprintf(fdump,"====================\n");
+	  print_status(&s,fdump);
+	  for (int w = 1; w <= WIN_INVEN; ++w) {
+	    fprintf(fdump,"\nWINDOW NUMBER %4d\n",w);
+	    window_dump(term->windows[w],fdump);
+	  }
+	  fprintf(fdump,"\nMAP\n");
+	  map_dump(term->map,fdump);
+	  fprintf(fdump,"\nMOTION\n");
+	  map_dump_motion(term->map, fdump);
+	  fclose(fdump);
 	}
-	printf("\nMAP\n");
-	map_dump(term->map,stdout);
 	//
 	// generate POV file
 	//
@@ -113,9 +123,21 @@ static void put_wall(int x, int y, int angle, FILE* outf) {
   fprintf( outf, "texture {WallTexture} } \n");
 }
 
-static void put_door(int x, int y, int angle, FILE* outf) {
+static void put_open_door(int x, int y, int angle, FILE* outf) {
   put_floor(x,y,outf);
-  fprintf( outf, "object { Door   rotate %d*z ", angle); 
+  fprintf( outf, "object { OpenDoor   rotate %d*z ", angle); 
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
+}
+
+static void put_closed_door(int x, int y, int angle, FILE* outf) {
+  put_floor(x,y,outf);
+  fprintf( outf, "object { ClosedDoor   rotate %d*z ", angle); 
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
+}
+
+static void put_broken_door(int x, int y, int angle, FILE* outf) {
+  put_floor(x,y,outf);
+  fprintf( outf, "object { BrokenDoor   rotate %d*z ", angle); 
   fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
@@ -187,71 +209,57 @@ void map_to_pov(terminal_t* term,
 	put_wall(x1,y1,90,outf);
 	break;
       case '-':
-	if (y1 > 0) {
-	  glyph_t* up = map_get_dungeon(map,x1,y1-1);
-	  if (up->ascii == '|') {
-	    // some this is a corner
-	    if (x1 > 0) {
-	      glyph_t* left = map_get_dungeon(map,x1-1,y1);
-	      if ((left->ascii == '-') || (left->ascii == '.')) {
-		// southeast corner
-		put_corner(x1,y1,-90,outf);
-	      } else {
-	        // southwest corner
-		put_corner(x1,y1,0,outf);
-	      }
-	    } else {
-	        // southwest corner
-		put_corner(x1,y1,0,outf);
-	      // southwest corner
-	    }
-	  } else {
-	    // horizontal wall
+	{
+	  int corner = is_corner(map,x1,y1);
+	  if (!corner) {
+	    // an horizontal wall
 	    put_wall(x1,y1,0,outf);
-	  }
-	} else if (y1 < (map->nrows-1)) {
-	  glyph_t* down = map_get_dungeon(map,x1,y1+1);
-	  if (down->ascii == '|') {
-	    // this is a corner
-	    if (x1 > 0) {
-	      glyph_t* left = map_get_dungeon(map,x1-1,y1);
-	      if ((left->ascii == '-') || (left->ascii == '.')) {
-	        // northeast corner
-		put_corner(x1,y1,180,outf);
-	      } else {
-	        // northwest corner
-		put_corner(x1,y1,90,outf);
-	      }
-	    } else {
-	      // northwest corner
-	      put_corner(x1,y1,90,outf);
+	  } else { // is a corner
+	    switch (corner) {
+	    case NW_CORNER:
+	      put_corner(x1, y1,  0, outf);
+	      break;
+	    case NE_CORNER:
+	      put_corner(x1, y1, 90, outf);
+	      break;
+	    case SW_CORNER:
+	      put_corner(x1, y1,-90, outf);
+	      break;
+	    case SE_CORNER:
+	      put_corner(x1, y1,180, outf);
+	      break;
+	    default:
+	      put_floor(x1,y1,outf);
+	      break;
 	    }
-	  } else {
-	    // horizontal wall
-	    put_wall(x1,y1,00,outf);
-	  }
+	  } // end corner
 	}
 	break;
       case '+':
-	{
-	  glyph_t dummy;
-	  dummy.ascii = 0;
-	  dummy.code  = 0;
-	  // check surrounding walls for orientation
-	  glyph_t* n = y1 > 0 ? map_get_dungeon(map,x1,y1-1) : &dummy;
-	  glyph_t* s = y1 < (map->nrows-1) ? map_get_dungeon(map,x1,y1+1) : &dummy;
-	  glyph_t* w = x1 > 0 ? map_get_dungeon(map,x1-1,y1) : &dummy;
-	  glyph_t* e = x1 < (map->ncols-1) ? map_get_dungeon(map,x1+1,y1) : &dummy;
-	  if ((n->ascii == '|') || (s->ascii == '|')) {
-	    // vertical door for sure
-	    put_door(x1,y1,90,outf);
-	  } else if ((e->ascii == '-') || (w->ascii == '-')) {
-	    // horizontal door
-	    put_door(x1,y1,0,outf);
-	  } else {
-	    // unhandled door orientation?	    
-	    put_door(x1,y1,45,outf);
-	  }
+	switch (is_door(map,x1,y1)) {
+	case NO_DOOR:
+	  break;
+	case H_DOOR_CLOSED:
+	  put_closed_door(x1,y1, 0,outf);
+	  break;
+	case H_DOOR_OPEN:
+	  put_open_door(x1,y1, 0,outf);
+	  break;
+	case H_DOOR_BROKEN:
+	  put_broken_door(x1,y1, 0,outf);
+	  break;
+	case V_DOOR_CLOSED:
+	  put_closed_door(x1,y1,90,outf);
+	  break;
+	case V_DOOR_OPEN:
+	  put_open_door(x1,y1,90,outf);
+	  break;
+	case V_DOOR_BROKEN:
+	  put_broken_door(x1,y1,90,outf);
+	  break;
+	default:
+	  put_floor(x1,y1,outf);
+	  break;
 	}
 	break;
       case '#':
@@ -322,7 +330,7 @@ void map_to_pov(terminal_t* term,
       const double T = time;
       if (g0->code != g1->code) {
 	// not same glyph!
-	printf("not same glyph!\n");
+	warn("not same glyph!\n");
 	dx0 = dx1;
 	dy0 = dy1;
 	x = (1.0-T)*x0 + T*x1;
@@ -344,9 +352,11 @@ void map_to_pov(terminal_t* term,
       // when T < 1, we are showing the maps between the previous and
       // the current. Thus we need to displace the glyph *backwards* 
       // according to current speed and position
-      fprintf( outf, " translate < %7.3f, %7.3f,  0> }\n", x, y);
-      if (is_hero) { // is this our hero??
+      if (!is_hero) {
+	fprintf( outf, " translate < %7.3f, %7.3f,  0> }\n", x, y);
+      } else { // it's our hero
 	fprintf(outf,"//\n// HERO \n//\n");
+	fprintf( outf, " translate < %7.3f, %7.3f,  0> no_shadow }\n", x, y);
 	fprintf ( outf, "light_source { GlobalLight translate < %7.3f, %7.3f,  0 > }\n", x, y );
 	fprintf ( outf, "light_source { LocalLight  translate < %7.3f, %7.3f,  0 > }\n", x, y);
 	fprintf ( outf, "camera {\n" );

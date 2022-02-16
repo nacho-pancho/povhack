@@ -41,10 +41,44 @@ void map_free(map_t* f);
 void map_reset(map_t* f);
 void map_copy(map_t* dst, const map_t* src);
 void map_dump(map_t* map, FILE* out);
+void map_dump_motion(map_t* map, FILE* out);
 void map_put(map_t* map, int x, int y, int gcode, int gflags, int gchar, int gcolor);
-void map_write(map_t* map, FILE* out);
 void map_set_hero_position(map_t* map, int x, int y);
-int map_changed(const map_t* a, const map_t* b);
-int map_valid(map_t* f);
+
+//
+// simple checks on the glyph
+//
+int is_empty(glyph_t* g);
+int is_monster(glyph_t* g);
+int is_structure(glyph_t* g);
+int is_effect(glyph_t* g);
+int is_monster(glyph_t* g);
+
+// 
+// complex checks that depend on the map too
+//
+#define NO_WALL 0
+#define H_WALL  1
+#define V_WALL  2
+int is_wall(map_t* map, int x, int y);
+
+#define NO_CORNER 0
+#define NW_CORNER 1
+#define NE_CORNER 2
+#define SW_CORNER 3
+#define SE_CORNER 4
+#define ALL_CORNER 5
+
+int is_corner(map_t* m, int x, int y);
+
+#define NO_DOOR        0
+#define H_DOOR_CLOSED  1
+#define H_DOOR_OPEN    2
+#define H_DOOR_BROKEN  3
+#define V_DOOR_CLOSED  4
+#define V_DOOR_OPEN    5
+#define V_DOOR_BROKEN  6
+
+int is_door(map_t* m, int x, int y);
 
 #endif

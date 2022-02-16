@@ -6,6 +6,7 @@ static struct argp_option options[] = {
     {"verbose",        'v', 0, OPTION_ARG_OPTIONAL, "Produce verbose output", 0 },
     {"quiet",          'q', 0, OPTION_ARG_OPTIONAL, "Don't produce any output", 0 },
     {"prefix",         'o', "path",    0, "output file prefix", 0 },
+    {"dump",           'd', 0, OPTION_ARG_OPTIONAL, "Save dump of frames to readable files.", 0 },
     {"tileset",        't', "path",    0, "input file", 0 },
     {"submap",        'r', "int",    0, "number of video maps between game maps", 0 },
     { 0 } // terminator
@@ -25,6 +26,9 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
         break;
     case 'v':
         set_log_level ( LOG_DEBUG );
+        break;
+    case 'd':
+      cfg->dump = 1;
         break;
     case 'o':
         cfg->output_prefix = arg;
@@ -73,6 +77,7 @@ static struct argp argp = { options, _parse_opt, args_doc, program_doc, 0, 0, 0 
 config_t parse_opt ( int argc, char* * argv ) {
 
     config_t cfg;
+    cfg.dump = 0;
     cfg.submaps = 1;
     cfg.input_file    = NULL;
     cfg.output_prefix = "out_";
