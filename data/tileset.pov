@@ -8,7 +8,7 @@
 //==================================================================
 
 global_settings { 
-  ambient_light 0.1*White 
+  ambient_light 0.2*White 
   assumed_gamma 1.0
 }
 
@@ -81,6 +81,7 @@ global_settings {
     agate color_map{[0.0 0.3*White][1.0 0.5*White]}
   }
   normal { agate 0.5 }
+  finish { ambient .5 }
   scale 0.1
 }
   
@@ -106,9 +107,18 @@ global_settings {
 //}
 
 #declare Wall = box { 
-  <-0.51, -0.51, 0.0 >,< 0.51, 0.51, RoomHeight>
+  <-0.51, -0.1, 0.0 >,< 0.51, 0.1, RoomHeight>
   texture { WallTexture }
 }
+
+#declare Corner = union { 
+  // default rotation is lower left corner (southwest)
+  box { < 0.1, -0.1, 0.0 >,< 0.51, 0.1, RoomHeight> }
+  box { <-0.1,   0.1, 0.0 >,< 0.1, -0.51, RoomHeight> }
+  texture { WallTexture }
+}
+
+#declare Fountain =  cylinder  { <0,0,0>,<0,0.1,0>,0.5 pigment { color Blue } }
 
 #declare Floor =
   box {

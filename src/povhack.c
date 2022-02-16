@@ -193,7 +193,7 @@ void map_to_pov(terminal_t* term,
 	    // some this is a corner
 	    if (x1 > 0) {
 	      glyph_t* left = map_get_dungeon(map,x1-1,y1);
-	      if (left->ascii == '-') {
+	      if ((left->ascii == '-') || (left->ascii == '.')) {
 		// southeast corner
 		put_corner(x1,y1,-90,outf);
 	      } else {
@@ -215,7 +215,7 @@ void map_to_pov(terminal_t* term,
 	    // this is a corner
 	    if (x1 > 0) {
 	      glyph_t* left = map_get_dungeon(map,x1-1,y1);
-	      if (left->ascii == '-') {
+	      if ((left->ascii == '-') || (left->ascii == '.')) {
 	        // northeast corner
 		put_corner(x1,y1,180,outf);
 	      } else {
@@ -228,7 +228,7 @@ void map_to_pov(terminal_t* term,
 	    }
 	  } else {
 	    // horizontal wall
-	    put_wall(x1,y1,90,outf);
+	    put_wall(x1,y1,00,outf);
 	  }
 	}
 	break;
@@ -267,10 +267,10 @@ void map_to_pov(terminal_t* term,
 	put_altar(x1,y1,outf);
 	break;
       case '}':
-	put_fountain(x1,y1,outf);
+	put_water(x1,y1,outf);
 	break;
       case '{':
-	put_water(x1,y1,outf);
+	put_fountain(x1,y1,outf);
 	break;
       case '^':
 	put_trap(x1,y1,outf);
