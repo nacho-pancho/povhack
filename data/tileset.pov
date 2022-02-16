@@ -21,7 +21,8 @@ global_settings {
 #declare TileSize      = 1.0;
 //#declare CameraHeight  = 0.7; 
 #declare CameraHeight  = 8.0; 
-#declare CameraDistance = 1;
+#declare CamDistX = -2;
+#declare CamDistY =  5;
 #declare LocalLightColor = color <1.0,0.75,0.5>;
 #declare GlobalLightColor = White;
 
@@ -81,7 +82,6 @@ global_settings {
     agate color_map{[0.0 0.3*White][1.0 0.5*White]}
   }
   normal { agate 0.5 }
-  finish { ambient .5 }
   scale 0.1
 }
   
@@ -125,6 +125,9 @@ global_settings {
   cylinder  { <0,0,0>,<0,0.0,0.08>,0.55 pigment { color White } }
 }
 
+// debug: origin
+cylinder { -10*z+40*x+10*y,10*z+40*x+10*y,0.1 pigment { color Red }}
+
 #declare Floor =
   box {
     < -0.51, -0.51, -0.01 >,< 0.51, 0.51, 0.0 >
@@ -144,13 +147,13 @@ global_settings {
 }
 
 #declare Door = union {
-  box { <-0.25, -0.08, 0.0 >,< 0.25, 0.08, 0.6*RoomHeight>}
-  cylinder { <0.0, -0.08, 0.6*RoomHeight>,<0.0, 0.08, 0.6*RoomHeight>,0.25 }
+  box { <-0.25, -0.05, 0.0 >,< 0.25, 0.05, 0.6*RoomHeight>}
+  cylinder { <0.0, -0.05, 0.6*RoomHeight>,<0.0, 0.05, 0.6*RoomHeight>,0.25 }
 }
 
 #declare BrokenDoor = difference {
   object { Wall }
-  object { Door scale <1,1.2,1> }
+  object { Door scale <1,3,1> }
   texture { WallTexture }
 }
 
@@ -223,7 +226,7 @@ global_settings {
     #declare BaseTile = text { 
       ttf TileFont chr(code) TileThickness, TileShift 
       texture { TileTexture pigment { ANSIColors[col] } }            
-      translate <-0.25, 0.2, -0.5*TileThickness>
+      translate <-0.0, 0.2, -0.5*TileThickness>
       scale TileSize
       rotate 90*x // from x,y plane to x,z plane
     }

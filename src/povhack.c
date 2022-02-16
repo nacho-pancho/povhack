@@ -204,65 +204,79 @@ void map_to_pov(terminal_t* term,
       }
       switch(g->ascii) {
       case '.':
-	put_floor(x1,y1,outf);
-	break;
-      case '|':
-	put_wall(x1,y1,90,outf);
-	break;
-      case '-':
-	{
-	  int corner = is_corner(map,x1,y1);
-	  if (!corner) {
-	    // an horizontal wall
-	    put_wall(x1,y1,0,outf);
-	  } else { // is a corner
-	    switch (corner) {
-	    case NW_CORNER:
-	      put_corner(x1, y1,  0, outf);
-	      break;
-	    case NE_CORNER:
-	      put_corner(x1, y1, 90, outf);
-	      break;
-	    case SW_CORNER:
-	      put_corner(x1, y1,-90, outf);
-	      break;
-	    case SE_CORNER:
-	      put_corner(x1, y1,180, outf);
-	      break;
-	    default:
-	      put_floor(x1,y1,outf);
-	      break;
-	    }
-	  } // end corner
+	if (is_door(map,x1,y1)) {
+	  printf(". is a door\n");
+	  switch (is_door(map,x1,y1)) { 
+	  case H_DOOR_BROKEN:
+	    put_broken_door(x1,y1, 0,outf);
+	    break;
+	  case V_DOOR_BROKEN:
+	    put_broken_door(x1,y1,90,outf);
+	    break;
+	  }
+	} else { // is floor
+	  put_floor(x1,y1,outf);
 	}
 	break;
-      case '+':
+	
+      case '-':
+	if (is_door(map,x1,y1)) {
+	  printf("- is a door\n");
+	  put_open_door(x1,y1,90, outf);
+	} else if (is_corner(map,x1,y1)) {
+	  switch (is_corner(map,x1,y1)) {
+	  case NW_CORNER:
+	    put_corner(x1, y1,  0, outf);
+	    break;
+	  case NE_CORNER:
+	    put_corner(x1, y1, 90, outf);
+	    break;
+	  case SW_CORNER:
+	    put_corner(x1, y1,-90, outf);
+	    break;
+	  case SE_CORNER:
+	    put_corner(x1, y1,180, outf);
+	    break;
+	  default:
+	    put_floor(x1,y1,outf);
+	    break;
+	  }
+	} else { // is a horizontal wall
+	  put_wall(x1,y1,0,outf);
+	}
+	break;
+	
+      case '|':
+	if (is_door(map,x1,y1)) {
+	  printf("| is a door\n");
+	  put_open_door(x1,y1,0,outf);
+	} else if (is_wall(map,x1,y1)) {
+	  put_wall(x1,y1,90,outf);
+	} else {
+	  // may be something else, object or moster
+	}
+	break;
+	
+      case '+':	
 	switch (is_door(map,x1,y1)) {
 	case NO_DOOR:
+	  // could be something else
 	  break;
 	case H_DOOR_CLOSED:
+	  printf("+ is a door\n");
 	  put_closed_door(x1,y1, 0,outf);
 	  break;
-	case H_DOOR_OPEN:
-	  put_open_door(x1,y1, 0,outf);
-	  break;
-	case H_DOOR_BROKEN:
-	  put_broken_door(x1,y1, 0,outf);
-	  break;
 	case V_DOOR_CLOSED:
+	  printf("+ is a door\n");
 	  put_closed_door(x1,y1,90,outf);
 	  break;
-	case V_DOOR_OPEN:
-	  put_open_door(x1,y1,90,outf);
-	  break;
-	case V_DOOR_BROKEN:
-	  put_broken_door(x1,y1,90,outf);
-	  break;
 	default:
+	  printf("+ is a wtf door\n");
 	  put_floor(x1,y1,outf);
 	  break;
 	}
 	break;
+	
       case '#':
 	put_floor(x1,y1,outf);
 	break;
@@ -365,7 +379,7 @@ void map_to_pov(terminal_t* term,
 	fprintf ( outf, "  perspective\n" );
 	fprintf ( outf, "  right (1920/1080)*x\n" );
 	fprintf ( outf, "  sky z\n" );
-	fprintf ( outf, "  location < %7.3f, %7.3f, CameraHeight> \n", x, y+5);
+	fprintf ( outf, "  location < %7.3f+CamDistX, %7.3f+CamDistY, CameraHeight> \n", x, y);
 	fprintf ( outf, "  look_at  < %7.3f, %7.3f, 0.5>\n", x, y );
 	fprintf ( outf, "}\n" );
       }      
