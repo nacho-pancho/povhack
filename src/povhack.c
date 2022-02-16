@@ -92,66 +92,66 @@ int main ( int argc, char * argv[] ) {
 //------------------------------------------------------------
 
 static void put_floor(int x, int y, FILE*outf) {
-  fprintf( outf, "object { Floor ");
-  fprintf( outf, " translate < %2d, %2d,  0 > ", x, y);
-  fprintf( outf, " texture {FloorTexture} } \n");
+  fprintf( outf, "object { Floor  ");
+  fprintf( outf, "translate < %2d, %2d,  0 > ", x, y);
+  fprintf( outf, "texture {FloorTexture} } \n");
 }
 
 
 static void put_corner(int x, int y, int angle, FILE* outf) {
   put_floor(x,y,outf);
   fprintf( outf, "object { Corner rotate %d*z ", angle); 
-  fprintf( outf, " translate < %2d, %2d,  0 > ", x, y);
-  fprintf( outf, " texture {WallTexture} } \n");
+  fprintf( outf, "translate < %2d, %2d,  0 > ", x, y);
+  fprintf( outf, "texture {WallTexture} } \n");
 }
 
 
 static void put_wall(int x, int y, int angle, FILE* outf) {
   put_floor(x,y,outf);
-  fprintf( outf, "object { Wall rotate %d*z ", angle); 
-  fprintf( outf, " translate < %2d, %2d,  0 > ", x, y);
-  fprintf( outf, " texture {WallTexture} } \n");
+  fprintf( outf, "object { Wall   rotate %d*z ", angle); 
+  fprintf( outf, "translate < %2d, %2d,  0 > ", x, y);
+  fprintf( outf, "texture {WallTexture} } \n");
 }
 
 static void put_door(int x, int y, int angle, FILE* outf) {
   put_floor(x,y,outf);
-  fprintf( outf, "object { Door rotate %d*z ", angle); 
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "object { Door   rotate %d*z ", angle); 
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_ladder_up(int x, int y, FILE* outf) {
   put_floor(x,y,outf);
   fprintf( outf, "object { Ladder ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_ladder_down(int x, int y, FILE* outf) {
   // no floor
   fprintf( outf, "object { Ladder ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_altar(int x, int y, FILE* outf) {
   put_floor(x,y,outf);
-  fprintf( outf, "object { Trap ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "object { Trap   ");
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_fountain(int x, int y, FILE* outf) {
   put_floor(x,y,outf);
   fprintf( outf, "object { Fountain ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_water(int x, int y, FILE* outf) {
   put_floor(x,y,outf);
-  fprintf( outf, "object { Water ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "object { Water  ");
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 static void put_trap(int x, int y, FILE* outf) {
   fprintf( outf, "object { Trap ");
-  fprintf( outf, " translate < %2d, %2d,  0 > }\n", x, y);
+  fprintf( outf, "translate < %2d, %2d,  0 > }\n", x, y);
 }
 
 void map_to_pov(terminal_t* term,
@@ -172,9 +172,13 @@ void map_to_pov(terminal_t* term,
   // structure layer: this one is handled using fixed objects
   // and additional logic to guess the orientation of objects
   // such as open doors, corners, etc.
+  fprintf(outf,"//\n// STRUCTURE \n//\n");
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
     for ( int x1 = 0 ; x1 < map->ncols ; ++x1 ) {
       glyph_t* g = map_get_dungeon(map,x1,y1);
+      if (g->code == 0) {
+	continue;
+      }
       switch(g->ascii) {
       case '.':
 	put_floor(x1,y1,outf);
@@ -279,22 +283,30 @@ void map_to_pov(terminal_t* term,
   //
   // objects: the easiest
   //
+  fprintf(outf,"//\n// OBJECTS \n//\n");
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
     for ( int x1 = 0 ; x1 < map->ncols ; ++x1 ) {
       glyph_t* g = map_get_object(map,x1,y1);
+      if (g->code == 0) {
+	continue;
+      }
       fprintf ( outf, "object { Tiles[%d][%d] ", g->ascii, g->color);	  
-      fprintf( outf, " translate < %2d, %2d,  0>\n}\n", x1, y1);
+      fprintf( outf, " translate < %2d, %2d,  0> }\n", x1, y1);
     }
   }
   //
   // monsters: these move
   //
+  fprintf(outf,"//\n// MONSTERS \n//\n");
   double hx = map->hero_x;
   double hy = map->hero_y;
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
     for ( int x1 = 0 ; x1 < map->ncols ; ++x1 ) {
       int is_hero = (x1 == hx) && (y1 == hy);
       glyph_t* g1 = map_get_monster(map,x1,y1);
+      if (g1->code == 0) {
+	continue;
+      }
       const double dx1 = g1->dx;
       const double dy1 = g1->dy;
       
@@ -328,12 +340,13 @@ void map_to_pov(terminal_t* term,
 	angle = (180.0/M_PI)*atan2f(dy, dx) - 90;
       }
       fprintf ( outf, "object { Tiles[%d][%d] ", g1->ascii, g1->color);	  
-      fprintf( outf, " rotate %5f*z\n", angle );
+      fprintf( outf, " rotate %5f*z ", angle );
       // when T < 1, we are showing the maps between the previous and
       // the current. Thus we need to displace the glyph *backwards* 
       // according to current speed and position
-      fprintf( outf, " translate < %7.3f, %7.3f,  0>\n}\n", x, y);
+      fprintf( outf, " translate < %7.3f, %7.3f,  0> }\n", x, y);
       if (is_hero) { // is this our hero??
+	fprintf(outf,"//\n// HERO \n//\n");
 	fprintf ( outf, "light_source { GlobalLight translate < %7.3f, %7.3f,  0 > }\n", x, y );
 	fprintf ( outf, "light_source { LocalLight  translate < %7.3f, %7.3f,  0 > }\n", x, y);
 	fprintf ( outf, "camera {\n" );
@@ -346,6 +359,7 @@ void map_to_pov(terminal_t* term,
       }      
     } // for x
   } // for y
+  fprintf(outf,"//\n// EFFECTS \n//\n");
   //
   // we cannot identify effects  for now
   //
