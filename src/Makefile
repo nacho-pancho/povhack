@@ -1,4 +1,4 @@
-OBJ=nethack.o terminal.o window.o map.o glyph.o  motion.o options.o logging.o util.o
+OBJ=nethack.o terminal.o window.o map.o glyph.o  motion.o options.o logging.o status.o util.o
 
 all: povhack test
 
