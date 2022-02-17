@@ -25,10 +25,10 @@ global_settings {
 #declare DoorSize = 0.25;
 
 //#declare CameraHeight  = 0.7; 
-#declare CameraHeight  = 4.0; 
+#declare CameraHeight  = 2.5; 
 #declare LookAtHeight  = TileSize;
-#declare CamDistX = -0.1; // = -1;
-#declare CamDistY = 4; // =  5;
+#declare CamDistX = -0.3; // = -1;
+#declare CamDistY = 3; // =  5;
 
 #declare LocalLightColor = color <1.0,0.65,0.2>;
 #declare GlobalLightColor = White;
@@ -172,7 +172,7 @@ global_settings {
 }
 
 #declare DoorHole = union {
-  box { <-DoorSize, -1, 0.0 >,< DoorSize, 1, 0.6*RoomHeight>}
+  box { <-DoorSize, -1, -0.05 >,< DoorSize, 1, 0.6*RoomHeight>}
   cylinder { <0.0, -1, 0.6*RoomHeight>,<0.0, 1, 0.6*RoomHeight>,DoorSize }
 }
 
