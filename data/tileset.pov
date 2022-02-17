@@ -128,8 +128,8 @@ global_settings {
 
 
 #declare FountainDish =  union {
-  cylinder  { <0,0,0>,<0,0.0,0.1>,0.5 texture {Water} }
-  cylinder  { <0,0,0>,<0,0.0,0.08>,0.55 texture { White_Marble } }
+  cylinder  { <0,0,0>,<0,0.0,0.1>,0.28 texture {Water} }
+  cylinder  { <0,0,0>,<0,0.0,0.08>,0.35 texture { White_Marble } }
 }
 
 #declare Fountain =  union {
@@ -169,6 +169,7 @@ global_settings {
 #declare Door = union {
   box { <-DoorSize, -DoorThickness, 0.0 >,< DoorSize, DoorThickness, 0.6*RoomHeight>}
   cylinder { <0.0, -DoorThickness, 0.6*RoomHeight>,<0.0, DoorThickness, 0.6*RoomHeight>,DoorSize }
+  texture { DoorTexture }
 }
 
 #declare DoorHole = union {
@@ -190,6 +191,16 @@ global_settings {
 #declare OpenDoor = union {
   object { BrokenDoor }
   object { Door texture { DoorTexture } rotate 90*z translate <-DoorSize,-DoorSize,0> }
+}
+
+#declare Ladder = union {
+  cylinder {<-0.2,-0.2,-1.2*RoomHeight>,<-0.2,-0.2,1.2*RoomHeight>,0.05}
+  cylinder {< 0.2, 0.2,-1.2*RoomHeight>,< 0.2, 0.2,1.2*RoomHeight>,0.05}
+  #for (step,-5,5)
+    #declare Y = RoomHeight*(step/5)+0.1 ;
+    cylinder {< -0.19, -0.19, Y>,< 0.19, 0.19, Y>,0.03 }
+  #end  
+  texture { DoorTexture }
 }
 
 // 
@@ -296,77 +307,5 @@ global_settings {
   rotate 90*x // from x,y plane to x,z plane
 }
 
-//#declare Tiles[64][7] = Avatar
-//#declare Tiles[64][8] = Avatar
-//
-// hallway floor
-//
-#declare Tiles[35][0] = Hallway
-#declare Tiles[35][8] = Hallway
-#declare Tiles[35][7] = Hallway
-//
-// room floor
-//
-#declare Tiles[46][0] = Floor
-#declare Tiles[46][7] = Floor
-#declare Tiles[46][8] = Floor
 
-//
-// vertical walls
-//
-#declare Tiles[124][0] = box { Wall }
-#declare Tiles[124][7] = box { Wall }
-#declare Tiles[124][8] = box { Wall }
-
-// open horizontal door
-#declare Tiles[124][3] = box { 
-    <-0.5,-0.5,0.0>,<-0.4,0.5,RoomHeight> 
-    texture { DoorTexture } }
-#declare Tiles[124][11] = Tiles[124][3]
-
-///
-// horizontal walls
-//
-#declare Tiles[45][0] = box {  Wall }
-#declare Tiles[45][7] = box {  Wall }
-#declare Tiles[45][8] = box {  Wall }
-
-// open vertical door
-#declare Tiles[45][3] =  box { 
-    <-0.51,0.0,-0.51>,<0.51,RoomHeight,-0.41>
-    texture { DoorTexture }
-  }
-#declare Tiles[45][11] = Tiles[45][3]
-///
-// closed door (+)
-//
-#declare Tiles[43][3] = box { // closed door
-  <-0.5,-0.5,0.0>,<0.5,0.5,RoomHeight>
-  texture { DoorTexture }
-}
-#declare Tiles[43][11] = box { // closed door
-  <-0.5,-0.5,0.0>,<0.5,0.5,RoomHeight>
-  texture { DoorTexture }
-}
-
-
-#declare Ladder = union {
-  cylinder {<-0.2,-0.2,-1.2*RoomHeight>,<-0.2,-0.2,1.2*RoomHeight>,0.05}
-  cylinder {< 0.2, 0.2,-1.2*RoomHeight>,< 0.2, 0.2,1.2*RoomHeight>,0.05}
-  #for (step,-5,5)
-    #declare Y = RoomHeight*(step/5)+0.1 ;
-    cylinder {< -0.19, -0.19, Y>,< 0.19, 0.19, Y>,0.03 }
-  #end  
-  texture { DoorTexture }
-}
-
-#declare Tiles[60][7] = Ladder
-
-#declare Tiles[60][8] = Tiles[60][7]
-#declare Tiles[60][0] = Tiles[60][7]
-
-#declare Tiles[62][0] = Ladder
-#declare Tiles[62][7] = Ladder
-#declare Tiles[62][8] = Ladder
-  
 
