@@ -216,7 +216,7 @@ global_settings {
 
 #declare GlobalLight =  light_source { 
     <0, 0, GlobalLightHeight>, 0.3*GlobalLightColor
-    area_light 1*x, 1*y, 5, 5
+    area_light 1*x, 1*y, 3, 3
 }
 
 //
