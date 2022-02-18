@@ -68,6 +68,19 @@
   object { BookPages texture { PagesTex } } 
 }
 
+// PENDING
+// amulet oblong cylinder + oblong half-spheroid 
+// armor  simple for all types: shield
+// scroll (?)
+// chain  ignore for now
+// coin   leave at $
+// food   chicken
+// gem    diamond, a.k.a, two cylinder sweeps with polygon base
+// potion spline lathe 
+// ring   metal torus
+// tool   for all types: wrench
+// wand   a stick and a ball 
+// weapon for all types: sword
 
 object { Wall translate  <5,-1,0>  } 
 object { Floor translate <5,-1,0> } 
