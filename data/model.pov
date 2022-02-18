@@ -82,16 +82,112 @@
   rotate 20*x+15*z
 }
 
+#declare WandTexOld = texture {
+  pigment { rgb .5 }
+  finish
+  { specular 2 roughness .02 metallic
+    reflection { .2, .8 }
+  }
+}
+
+#declare WandTex = texture {
+  pigment { color <0.95,0.85,0.70> } 
+  finish
+  { 
+    diffuse 0.75
+    brilliance 2
+    specular 1.0 roughness 0.001
+//    phong 1.0 phong_size 100    
+  }
+}
+
+#declare Wand0 = julia_fractal
+{ <-.4, .2, .3, -.2>
+  quaternion sqr
+  max_iteration 8
+  precision 50
+}
+
+#declare Wand = intersection {
+  object { Wand0 scale <0.9,0.025,0.025>}
+  sphere { <0.5,0,0>,0.5 }
+  scale 0.7
+  rotate -90*y
+  rotate 20*x+20*z
+  translate 0.2*z
+  texture { WandTex }
+}
+
+
+#declare PotionFlask = lathe {
+  bezier_spline
+  8
+  // bottom
+  <0.2    ,0.0    >, // p0
+  <0.2+0.2,0.0+0.2>, // c0
+  <0.1,0.6-0.15>, // c1
+  <0.1,0.6    >, // p1
+  // top
+  <0.1     ,0.6>, // p2
+  <0.1     ,0.6+0.1>, // c2
+  <0.1+0.1 ,0.8>, // c3
+  <0.1     ,0.8> // p3
+  rotate 90*x
+}
+
+#declare FlaskTex = material {
+  texture { 
+    finish { 
+    specular 1
+    roughness 0.001
+    diffuse 0.3
+    reflection 0.1
+    } 
+    pigment { color <0.8,0.9,0.95,0.8> } 
+  }
+    interior { ior 1.02 }
+}
+
+#declare PotionLiquid = difference {
+  object { PotionFlask scale 0.9 }
+  plane  { -z,-0.4 }
+  translate 0.01*z
+}
+
+#declare LiquidTex = material {
+  texture {
+  pigment { color <1.0,0.0,0.0,0.7>  } // needs to be changed
+  finish { 
+    specular 1
+    roughness 0.001
+    diffuse 0.3
+    reflection 0.1
+    ior 1.1
+    } 
+  }
+  interior { ior 1.1 }
+}
+
+#declare PotionCork = cone {
+  <0.0,0.75,0.0>,0.09,
+  <0.0,0.85,0.0>,0.11
+  rotate 90*x
+}
+
+#declare Potion = union { 
+  object {PotionFlask material { FlaskTex } } 
+  object {PotionCork texture { Cork scale 0.5} } 
+  object {PotionLiquid material { LiquidTex } }
+}
 // PENDING
 // armor  simple for all types: shield
 // scroll 
 // chain  ignore for now
 // coin   leave at $
 // food   chicken drum
-// potion spline lathe 
 // tool   for all types: wrench
-// wand   a stick with a handle
 // weapon for all types: sword
+// rock   *
 
 #declare DN = 10.0;
 #declare DA = 2.0*pi/DN;
@@ -128,7 +224,7 @@
 object { Wall translate  <5,-1,0>  } 
 object { Floor translate <5,-1,0> } 
 object { Floor translate <5,0,0> texture {FloorTexture} } 
-object { Gem translate <5,0,0> }
+object { Potion translate <5,0,0> }
 
 
 light_source {  <  10.000,   15.000,  25.000 >, White }
@@ -137,7 +233,7 @@ camera {
   perspective
   right (1920/1080)*x
   sky z
-  location <  5, 5, 3 >
+  location <  5, 4, 2 >
   look_at  <  5, 0, 0.5 >
   angle 40
 }
