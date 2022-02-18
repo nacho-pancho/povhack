@@ -68,27 +68,70 @@
   object { BookPages texture { PagesTex } } 
 }
 
+#declare Amulet = union {
+  cylinder { <0,0,0>,<0,-0.05,0.0>,0.4 scale <0.7,0.5,1> translate 0.5*z texture { Silver_Texture } }
+  difference {
+    sphere { <0,0,0>,0.325 scale <0.7,0.2,1> translate 0.5*z texture { Ruby_Glass } }
+    plane  { y,0.001 }
+  }
+  rotate 15*z+20*x
+}
+
+#declare Ring = torus { 0.4,0.05
+  scale <0.5,1,0.5> translate 0.5*z texture { Gold_Texture } 
+  rotate 20*x+15*z
+}
+
 // PENDING
-// amulet oblong cylinder + oblong half-spheroid 
 // armor  simple for all types: shield
-// scroll (?)
+// scroll 
 // chain  ignore for now
 // coin   leave at $
-// food   chicken
-// gem    diamond, a.k.a, two cylinder sweeps with polygon base
+// food   chicken drum
 // potion spline lathe 
-// ring   metal torus
 // tool   for all types: wrench
-// wand   a stick and a ball 
+// wand   a stick with a handle
 // weapon for all types: sword
+
+#declare DN = 10.0;
+#declare DA = 2.0*pi/DN;
+
+#declare Diamond0 = prism {
+	  linear_spline
+	  conic_sweep 
+	    0, 1, DN+1,
+//#for (a,0,DN)	    
+//	      <cos(a*DA),sin(a*DA)>,
+//#end	      
+	      <cos(0),sin(0)>,
+	      <cos(DA),sin(DA)>,
+	      <cos(2*DA),sin(2*DA)>,
+	      <cos(3*DA),sin(3*DA)>,
+	      <cos(4*DA),sin(4*DA)>,
+	      <cos(5*DA),sin(5*DA)>,
+	      <cos(6*DA),sin(6*DA)>,
+	      <cos(7*DA),sin(7*DA)>,
+	      <cos(8*DA),sin(8*DA)>,
+	      <cos(9*DA),sin(9*DA)>,
+	      <cos(10*DA),sin(10*DA)>
+      }
+
+#declare Gem = union {
+  object { Diamond0 translate -y  }
+  difference { object { Diamond0 translate -y } plane { y,-0.3 } rotate 180*x }
+  rotate 90*x+10*z
+  texture { Yellow_Glass  } interior { ior 1.4 } 
+  scale <0.2,0.2,0.25>
+  translate 0.5*z
+}
 
 object { Wall translate  <5,-1,0>  } 
 object { Floor translate <5,-1,0> } 
 object { Floor translate <5,0,0> texture {FloorTexture} } 
-object { Book translate <5,0,0> }
+object { Gem translate <5,0,0> }
 
 
-light_source {  <  5.000,   5.000,  20.000 >, White }
+light_source {  <  10.000,   15.000,  25.000 >, White }
 
 camera {
   perspective
