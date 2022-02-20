@@ -73,6 +73,8 @@ typedef struct {
 #define CW(t) ((t)->windows[(t)->current_window])
 
 static void print_cmd(cmd_t* cmd) {
+  if (!level_xdebug())
+    return;
   printf("ESC [ ");
   for (int i = 0; i < cmd->npar; i++) {
     printf("%d ",cmd->par[i]);
@@ -85,46 +87,46 @@ static void print_cmd(cmd_t* cmd) {
 }
 
 static void cursor_up(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("up: ");
-  print_cmd(cmd);
-#endif
+ 
+  xdebug("up: ");
+    print_cmd(cmd);
+
   window_t* w = CW(f);
   if (w->cy > 0) w->cy--;
 }
 
 static void cursor_down(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("down: ");
+
+  xdebug("down: ");
   print_cmd(cmd);
-#endif
+
   window_t* w = CW(f);
   if (w->cy < (w->nrows-1)) w->cy++;
 }
 
 static void cursor_right(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("right: ");
+
+  xdebug("right: ");
   print_cmd(cmd);
-#endif
+
   window_t* w = CW(f);
   if (w->cx < (w->ncols-1)) w->cx++;
 }
 
 static void cursor_left(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("left: ");
+
+  xdebug("left: ");
   print_cmd(cmd);
-#endif
+
   window_t* w = CW(f);
   if (w->cx > 0) w->cx--;
 }
 
 static void cursor_goto(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("goto: ");
+
+  xdebug("goto: ");
   print_cmd(cmd);
-#endif
+
   window_t* w = CW(f);
   if (cmd->npar == 0) {
     w->cy = 0;
@@ -133,7 +135,7 @@ static void cursor_goto(terminal_t* f,cmd_t* cmd) {
     w->cy = cmd->par[0] < w->nrows ? cmd->par[0] : w->nrows-1;
     w->cx = cmd->par[1] < w->ncols ? cmd->par[1] : w->ncols-1;
   } else {
-    printf("WARNING: invalid goto command\n");
+    warn("invalid goto command\n");
   }
 }
 
@@ -153,10 +155,10 @@ static void erase_map(map_t* f, int start, int end) {
 }
 
 static void erase_display(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("erase in display: ");
+
+  xdebug("erase in display: ");
   print_cmd(cmd);
-#endif
+
   if ((cmd->npar) == 0)
     cmd->par[0] = 0;
   window_t* w = CW(f);
@@ -166,27 +168,27 @@ static void erase_display(terminal_t* f,cmd_t* cmd) {
 
   switch (cmd->par[0]) {
   case 0: // erase from cursor to end
-#ifdef DEBUG_TERM
-    printf("erase from cursor to end of display\n");
-#endif    
+
+    xdebug("erase from cursor to end of display\n");
+    
     erase_win(w,ic,i1);
     if (f->current_window == WIN_MAP) {
       erase_map(f->map,ic,i1);
     }
     break;
   case 1: // erase from begin to cursor
-#ifdef DEBUG_TERM
-    printf("erase from beginning of display to cursor\n");
-#endif
+
+    xdebug("erase from beginning of display to cursor\n");
+
     erase_win(w,i0,ic);
     if (f->current_window == WIN_MAP) {
       erase_map(f->map,i0,ic);
     }
     break;
   case 2: // erase all
-#ifdef DEBUG_TERM
-    printf("erase all\n");
-#endif
+
+    xdebug("erase all\n");
+
     erase_win(w,i0,i1);
     w->cx = w->cy = w->cc = 0;
     if (f->current_window == WIN_MAP) {
@@ -201,10 +203,10 @@ static void erase_display(terminal_t* f,cmd_t* cmd) {
 }
 
 static void erase_line(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("erase in line: ");
+
+  xdebug("erase in line: ");
   print_cmd(cmd);
-#endif
+
   if ((cmd->npar) == 0)
     cmd->par[0] = 0;
 
@@ -214,9 +216,9 @@ static void erase_line(terminal_t* f,cmd_t* cmd) {
   const int i1 = i0 + w->ncols;
   switch (cmd->par[0]) {
   case 0: // erase from cursor to end of line
-#ifdef DEBUG_TERM
-    printf("erase line from cursor to end of line\n");
-#endif
+
+    xdebug("erase line from cursor to end of line\n");
+
     erase_win(w,ic,i1);
     if (f->current_window == WIN_MAP) {
       erase_map(f->map,ic,i1);
@@ -229,9 +231,9 @@ static void erase_line(terminal_t* f,cmd_t* cmd) {
     }
     break;
   case 2: // erase all line
-#ifdef DEBUG_TERM
-    printf("erase all\n");
-#endif
+
+    xdebug("erase all\n");
+
     erase_win(w,i0,i1);
     if (f->current_window == WIN_MAP) {
       erase_map(f->map,i0,i1);
@@ -245,10 +247,10 @@ static void erase_line(terminal_t* f,cmd_t* cmd) {
 }
 
 static void set_style(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("set style: ");
+
+  xdebug("set style: ");
   print_cmd(cmd);
-#endif
+
   window_t* w = CW(f);
   switch (cmd->par[0]) {
   case 0: // reset style
@@ -278,10 +280,9 @@ static void set_style(terminal_t* f,cmd_t* cmd) {
  * the user has control
  */ 
 static void end_data(terminal_t* f) {
-#ifdef DEBUG_TERM
-  printf("END DATA: w=%d x=%d y=%d\n",
-	 f->current_window,w->cx,w->cy);
-#endif
+
+  debug("END DATA: w=%d\n", f->current_window);
+
   window_t* w = CW(f);
   if (f->current_window == WIN_MAP) {
     map_set_hero_position(f->map,w->cx,w->cy);
@@ -291,29 +292,29 @@ static void end_data(terminal_t* f) {
 }
 
 static void tiledata(terminal_t* f,cmd_t* cmd) {
-#ifdef DEBUG_TERM
-  printf("tiledata: ");
+
+  xdebug("tiledata: ");
   print_cmd(cmd);
-#endif  
+  
   int subcmd = cmd->par[1];
   int code = cmd->par[2];
   int flags = cmd->par[3];
   if (subcmd == 0) { // begin glyph
-#ifdef DEBUG_TERM
-    printf("begin glyph\n");
-#endif  
+
+    xdebug("begin glyph\n");
+  
     f->is_glyph = 1;
     f->current_glyph_code = code;
     f->current_glyph_flags = flags;
   } else if (subcmd == 1) { // end glyph
     f->is_glyph = 0;
-#ifdef DEBUG_TERM
-    printf("end glyph\n");
-#endif  
+
+    xdebug("end glyph\n");
+  
   } else if (subcmd == 2) { // switch to window
-#ifdef DEBUG_TERM
-    printf("select window %d\n",cmd->par[2]);
-#endif  
+
+    xdebug("select window %d\n",cmd->par[2]);
+  
     f->current_window = cmd->par[2];
   } else if (subcmd == 3) { // end map!
     end_data(f);
@@ -393,7 +394,7 @@ void terminal_put(terminal_t* f, int c) {
 	// we rely on the map window for status
 	// the map is not a window
 	if (f->current_window != WIN_MAP) {
-	  printf("should be in map window!");
+	  xdebug("should be in map window!");
 	} else {
 	  // must be map window to work
 	  window_t* w = CW(f);
@@ -406,10 +407,10 @@ void terminal_put(terminal_t* f, int c) {
 	  const uint16_t gflags = f->current_glyph_flags;
 	  const uint16_t gcode  = f->current_glyph_code;
 	  const uint16_t gstyle = w->cc;
-#ifdef DEBUG_TERM
-	  printf("write glyph code=0x%04x flags=0x%04x char=%c style=0x%02x\n",
+
+	  xdebug("write glyph code=0x%04x flags=0x%04x char=%c style=0x%02x\n",
 		 gcode,gflags,gchar,gstyle);
-#endif	  
+	  
 	  map_put(f->map,x,y,gcode,gflags,gchar,gstyle);
 	}	
       }
@@ -418,9 +419,9 @@ void terminal_put(terminal_t* f, int c) {
       // this may be a regular char, or a special char
       // if it is a special char, it might move the cursor
       window_t* w = CW(f);
-#ifdef DEBUG_TERM
-      printf("put char %c\n",c);
-#endif
+
+      xdebug("put char %c\n",c);
+
       window_put(w,c);
     }
   } else { // within command
@@ -445,7 +446,7 @@ void terminal_put(terminal_t* f, int c) {
       } else if ( c == '?' ) {
 	// ignore extended command starting with [?
       } else {
-	printf("WARNING: unable to interpret sequence. ESC %c\n",c);
+	warn("unable to interpret sequence. ESC %c\n",c);
       }
   }
 }

@@ -58,6 +58,18 @@ void debug ( const char * format, ... ) {
     va_end ( args );
 }
 
+void xdebug ( const char * format, ... ) {
+    va_list args;
+    if ( !log_stream ) {
+        log_stream = stdout;
+    }
+    va_start ( args, format );
+    if ( log_level <= LOG_XDEBUG ) {
+        vfprintf ( log_stream, format, args );
+    }
+    va_end ( args );
+}
+
 
 char level_warn ( void ) {
     return log_level <= LOG_WARNING;
@@ -70,4 +82,8 @@ char level_error ( void ) {
 }
 char level_debug ( void ) {
     return log_level <= LOG_DEBUG;
+}
+
+char level_xdebug ( void ) {
+    return log_level <= LOG_XDEBUG;
 }

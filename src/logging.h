@@ -26,6 +26,7 @@
 #define LOG_QUIET   80
 #define LOG_INFO    70
 #define LOG_DEBUG   60
+#define LOG_XDEBUG  50
 #define LOG_ALL     0
 
 void set_log_level ( int level );
@@ -35,10 +36,12 @@ void warn ( const char * format, ... );
 void info ( const char * format, ... );
 void error ( const char * format, ... );
 void debug ( const char * format, ... );
+void xdebug ( const char * format, ... );
 
 char level_warn ( void );
 char level_info ( void );
 char level_error ( void );
 char level_debug ( void );
+char level_xdebug ( void );
 
 #endif
