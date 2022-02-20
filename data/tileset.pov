@@ -1,6 +1,7 @@
 #include "colors.inc"
 #include "textures.inc"
 #include "stones.inc"
+#include "shapes.inc"
 
 //==================================================================
 // easily customizable stuff
@@ -113,17 +114,18 @@ global_settings {
   pigment {
     agate color_map{[0.0 0.3*White][1.0 0.4*White]}
   }
-  normal { agate 0.8 }
-  scale 0.05
+  //normal { agate 0.8 }
+  normal { granite 0.5 }
+  scale 0.1
 }
   
 #declare FloorTexture = texture {
   pigment {
     //crackle color_map{[0.0 0.2*White][1.0 0.5*White]}
-    crackle color_map{[0.0 0.4*Brown2][0.1 0.5*Brown2][0.3 0.4*White][1.0 0.4*White]}
+    crackle color_map{[0.0 0.7*Brown2][0.05 0.7*Brown2][0.05 0.4*White][1.0 0.4*White]}
   }
   normal { crackle 1.6 }
-  scale <0.1,0.05,0.1>
+  scale <0.3,0.3,0.3>
 }
 
 #declare GroundColor1 = color <0.4,0.3,0.2>;
@@ -560,6 +562,102 @@ union {
   translate <-0.25,0.25,-0.5*TileThickness>
   scale TileSize
   rotate 90*x // from x,y plane to x,z plane
+}
+#declare Shield00 = prism { 
+  bezier_spline
+  -0.3,0.3
+  12,
+  < -1, 0>,
+  < -1, 0>,
+  <  1, 0>,
+  <  1, 0>,
+
+  <  1, 0>,
+  <  1,-1>,
+  <  1,-2.5>,
+  <  0,-3>,
+
+  <  0,-3>,
+  < -1,-2.5>,
+  < -1,-1>,
+  < -1, 0>
+  translate 1.5*z
+}
+#declare Shield01 = difference {
+	cylinder { <0,0,2>,<0,0,-2>,1.1 scale <1,0.2,1> translate 0.1*y }
+	cylinder { <0,0,2>,<0,0,-2>,1.1 scale <1,0.2,1> translate -0.1*y }
+}
+#declare Shield10 = prism { 
+  bezier_spline
+  -0.5,0.5
+  12,
+  < -0.8, -0.2>,
+  < -0.8, -0.2>,
+  <  0.8, -0.2>,
+  <  0.8, -0.2>,
+
+  <  0.8, -0.1>,
+  <  0.8, -1.5>,
+  <  0.7, -2.5>,
+  <  0.0, -2.8>,
+
+  <  0.0, -2.8>,
+  < -0.7, -2.5>,
+  < -0.8, -1.5>,
+  < -0.8, -0.2>
+  translate 1.5*z
+}
+
+#declare Shield1 = intersection  { 
+  object { Shield10 }
+  object { Shield01 }
+}
+
+#declare Shield0 = 
+  difference {
+    intersection { 
+      object { Shield00 } 
+      object { Shield01 }  
+    }
+    object { Shield1 scale <1,2,1> }
+}
+
+#declare ShieldTex = texture {
+  checker
+  texture { pigment { color Blue } finish { phong 0.8 phong_size 100 brilliance 5 } }
+  texture { pigment { color Yellow  }   finish { phong 0.8 phong_size 100 brilliance 5 } }
+  scale 2
+  translate 0.25*z
+}
+
+#declare Shield = union { 
+  object { Shield0 texture { pigment { color Gray } finish { Metal } } }
+  object { Shield1 texture { ShieldTex } }
+}
+
+#declare ScrollPaper = difference {
+  intersection { 
+    object { Hyperboloid_Y scale <0.25,1.0,0.25> }
+    sphere { <0,0,0>,1 }
+  }
+  sphere { <0,0,0>,1 scale <1,0.3,1> translate 1.2*y }
+  sphere { <0,0,0>,1 scale <1,0.3,1> translate -1.2*y }
+  pigment { color <0.8,0.7,0.5> } 
+}
+
+#declare ScrollPole = union {
+  cylinder { <0.0,-1.1,0.0>,<0.0, 1.1,0.0>,0.1 }
+  sphere   { <0.0, 0.0,0.0>,0.2 scale <1,0.6,1> translate -1.1*y }
+  sphere   { <0.0, 0.0,0.0>,0.2 scale <1,0.6,1> translate  1.1*y }
+  texture { DMFDarkOak scale 0.2  }
+}
+
+#declare Scroll  = union { 
+  object { ScrollPole }
+  object { ScrollPaper }
+  rotate 90*x
+  scale 0.2
+  translate 0.5*y
 }
 
 
