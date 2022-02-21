@@ -1,0 +1,1 @@
+java -jar -Xmx128m povtree.jar it

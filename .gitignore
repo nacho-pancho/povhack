@@ -54,3 +54,6 @@ dkms.conf
 *.ppm
 *.pov
 *.dump
+src/povhack
+demo
+
