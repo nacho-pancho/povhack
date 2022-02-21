@@ -126,22 +126,6 @@ global_settings {
 #end
 
 //
-// default overrides:
-// 32  spc void (nothing; put a black box here)
-// 35  # hallway
-// 46  . gray   (dark floor)
-// 46  . bright (lit floor)
-// 124 | gray  v. dark wall
-// 124 | white v. lit wall
-// 124 | orange open h. door
-// 45  - gray  h. wall dark
-// 45  - white  h. wall lit
-// 45  - orange open v. door
-// 43  + closed door
-// 62  > down
-// 60  < up
-
-//
 // void / unknown
 //
 #declare Tiles[32][0] = box { 
@@ -154,7 +138,7 @@ global_settings {
 
 // multi-colored items
 #for (col,0,15) 
-  // !: wand
+  // !: potion
   #declare Tiles[33][col] = Potion( ANSIColors[col] )
   // ": amulet
   #declare Tiles[34][col] = Amulet( ANSIColors[col] )
@@ -163,11 +147,17 @@ global_settings {
   // +: book
   #declare Tiles[43][col] = Book( ANSIColors[col] )
   // ?: scroll
+  #declare Tiles[43][col] = Book( ANSIColors[col] )
   // /: wand
   #declare Tiles[47][col] = Wand
   #declare Tiles[61][col] = Ring  
+  #declare Tiles[40][col] = Sword
+  #declare Tiles[91][col] = Shield
+  #declare Tiles[63][col] = Scroll
 #end
+// ( weapon
 
+// ) is tool
 // orange ) is a chest
 #declare Tiles[40][3]  = Chest
 #declare Tiles[40][11] = Chest
@@ -181,9 +171,14 @@ global_settings {
 #declare Tiles[42][7]  = Rock
 #declare Tiles[42][0]  = Rock
 #declare Tiles[42][8]  = Rock
-#declare Tiles[42][15] = Rock
+#declare Tiles[41][15] = Rock
+
+#declare Tiles[95][8] = Altar
+#declare Tiles[95][15] = Altar
 
 // %: food
+#declare Tiles[37][3] = Drumstick
+#declare Tiles[37][11] = Drumstick
 // &
 // # cyan: grating
 // }: water
@@ -193,9 +188,6 @@ global_settings {
 // } red: lava
 // # green: tree
 // # isolated: sink
-// 0 cyan: iron ball
 // _ cyan: chain
 // . orange : venom
-// / wand
-// = ring
 

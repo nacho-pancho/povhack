@@ -5,6 +5,7 @@
 #include "fountain.inc"
 #include "grave.inc"
 #include "altar.inc"
+#include "ladder.inc"
 // pending
 // #include "throne.inc" 
 // #include "grating.inc" 
