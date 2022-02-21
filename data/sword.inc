@@ -1,7 +1,7 @@
-#version 3.7;
-#include "tileset.pov"
-
-#declare Draft = cylinder { <0,0,0>,<0,0,1>,0.2 pigment { color Red }}
+#include "colors.inc"
+#include "stones.inc"
+#include "shapes.inc"
+#include "textures.inc"
 
 #declare Blade = prism { 
   conic_sweep
@@ -70,20 +70,3 @@
   object { Handle } 
   scale 0.7
 }
-object { Wall translate  <0,-1,0>  } 
-object { Floor translate <0,-1,0> } 
-object { Floor translate <0,0,0> texture {FloorTexture} } 
-object { Sword rotate 20*z+10*x }
-
-light_source {  <  2.000,   0.000,  5.000 >, 0.25*White }
-
-camera {
-  perspective
-  right (1920/1080)*x
-  sky z
-  location <  0, 4, 2 >
-  look_at  <  0, 0, 0.5 >
-  angle 40
-}
-
-
