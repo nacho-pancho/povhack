@@ -1,79 +1,48 @@
 #version 3.7;
 #include "tileset.pov"
 
+#include "colors.inc"
+#include "stones.inc"
+#include "shapes.inc"
+#include "textures.inc"
+
 #declare Draft = cylinder { <0,0,0>,<0,0,1>,0.2 pigment { color Red }}
 
-#declare Blade = prism { 
-  conic_sweep
-  bezier_spline
-  0.0,1.0
-  12,
-  < -1, 0>,
-  < -1, 0>,
-  <  1, 0>,
-  <  1, 0>,
-
-  <  1, 0>,
-  <  1,-3>,
-  <  1,-2.5>,
-  <  0,-3>,
-
-  <  0,-3>,
-  < -1,-2.5>,
-  < -1,-3>,
-  < -1, 0>
-  translate -1.0*y 
-  scale <0.05,0.02,0.3>  
-  rotate 180*x translate 0.4*z 
-  texture { Chrome_Metal pigment { color 0.3*White } } 
+#declare Meat = ovus {
+  0.3, 0.1
+  scale <0.35,0.5,0.3>
 }
 
-#declare Handle1 = box {
-  <-0.5, -0.5, -0.5>,< 0.5, 0.5, 0.5>
-  rotate 45*y
-  scale <1.0,0.1,0.3>
-  rotate 90*x
-  scale 0.25
-}
-// hull
-
-// PENDING
-// food   chicken drum
-// tool   for all types: wrench
-// sink (needs code for detection)
-// grating (needs code for detection)
-// 
-
-#declare Handle2 = intersection {
-  box { 
-    <-0.5, -0.5, -0.5>,< 0.5, 0.5, 0.5> 
+#declare Bone = union {
+  intersection { 
+    object { Hyperboloid_Y scale <0.25,1.0,0.25> }
+    sphere { <0,0,0>,1 }
+    scale 0.125
+    translate 0.2*y
   }
-  sphere { <0,0,0>,1 scale <0.1,1.0,0.1> translate 0.25*y }
-  translate 0.5*y
-  rotate 90*x
-  scale <0.4,0.4,0.3>
+  sphere { <0,0,0>,0.04 scale <1,0.6,1> translate 0.08*y }
+  scale <0.8,1,0.8>
 }
 
-#declare Handle3 = sphere { 
-  <0,0,0>,0.1
-  translate 0.1*z
-  scale 1.2*<0.4,0.4,0.3>
-}
-#declare Handle = union {
-  object { Handle1 translate 0.4*z pigment { color  Yellow } texture { Silver_Metal } }
-  object { Handle2 translate 0.1*z pigment { color  0.3*Red } }
-  object { Handle3 translate 0.05*z pigment { color  Blue } texture { Silver_Metal } }
+#declare Drumstick = union { 
+  object { Meat 
+    rotate -90*x 
+    translate 0.45*z 
+    texture { 
+      pigment { color 0.3*Red } 
+      finish { phong 0.5 phong_size 10 brilliance 2 }
+    }
+  }
+  object { Bone rotate  90*x 
+    pigment  { color <1.0,0.9,0.8> } 
+  }
+  scale 1.2
 }
 
-#declare Sword = union {
-  object { Blade }
-  object { Handle } 
-  scale 0.7
-}
 object { Wall translate  <0,-1,0>  } 
 object { Floor translate <0,-1,0> } 
 object { Floor translate <0,0,0> texture {FloorTexture} } 
-object { Sword rotate 20*z+10*x }
+object { Drumstick rotate 15*z+15*x }
 
 light_source {  <  2.000,   0.000,  5.000 >, 0.25*White }
 

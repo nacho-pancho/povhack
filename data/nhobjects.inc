@@ -11,3 +11,7 @@
 #include "gem.inc"
 #include "shield.inc" // for all armors
 #include "scroll.inc"
+#include "food.inc"
+// pending
+// #include "tool.inc"
+// #include "chain.inc"

@@ -5,5 +5,15 @@
 #include "fountain.inc"
 #include "grave.inc"
 #include "altar.inc"
-
-// #include "grating.inc" pending
+// pending
+// #include "throne.inc" 
+// #include "grating.inc" 
+// #include "ironbars.inc"
+// #include "sink.inc"
+// #include "water.inc"
+// #include "lava.inc"
+// #include "drawbridge.inc"
+// #include "cloud.inc"
+// #include "tree.inc"
+// #include "pool.inc"
+// #include "web.inc" 
