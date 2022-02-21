@@ -2,6 +2,7 @@
 #include "stones.inc"
 #include "shapes.inc"
 #include "textures.inc"
+#include "nhglobals.inc"
 
 #declare WallTexture = texture {
   pigment {

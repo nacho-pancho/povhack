@@ -3,6 +3,7 @@
 #include "stones.inc"
 #include "shapes.inc"
 
+#include "nhglobals.inc"
 #include "nhobjects.inc"
 #include "nhstructures.inc"
 
@@ -46,7 +47,6 @@ global_settings {
 #declare TileShift     = 0.0;
 #declare TileSize      = 0.5;
 
-#declare RoomHeight = 1.0;
 #declare LocalLightHeight  = 0.6*RoomHeight;
 #declare GlobalLightHeight = 0.6*RoomHeight;
 
