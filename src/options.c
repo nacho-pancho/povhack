@@ -5,10 +5,11 @@
 static struct argp_option options[] = {
     {"verbose",        'v', 0, OPTION_ARG_OPTIONAL, "Produce verbose output", 0 },
     {"quiet",          'q', 0, OPTION_ARG_OPTIONAL, "Don't produce any output", 0 },
+    {"input",          'i', "path",    0, "input file", 0 },
     {"prefix",         'o', "path",    0, "output file prefix", 0 },
     {"dump",           'd', 0, OPTION_ARG_OPTIONAL, "Save dump of frames to readable files.", 0 },
-    {"tileset",        't', "path",    0, "input file", 0 },
-    {"submap",        'r', "int",    0, "number of video maps between game maps", 0 },
+    {"tileset",        't', "path",    0, "tileset file", 0 },
+    {"oversample",     'r', "int",     0, "number of video maps between game maps", 0 },
     { 0 } // terminator
 };
 
@@ -30,6 +31,9 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
     case 'd':
       cfg->dump = 1;
         break;
+    case 'i':
+        cfg->input_file = arg;
+        break;
     case 'o':
         cfg->output_prefix = arg;
         break;
@@ -42,22 +46,14 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
 
     case ARGP_KEY_ARG:
         switch ( state->arg_num ) {
-        case 0:
-            cfg->input_file = arg;
-            break;
         default:
             /** too many arguments! */
-            error ( "Too many arguments!.\n" );
+            error ( "There are no free arguments in this program.\n" );
             argp_usage ( state );
             break;
         }
         break;
     case ARGP_KEY_END:
-        if ( state->arg_num < 1 ) {
-            /* Not enough mandatory arguments! */
-            error ( "Too FEW arguments!\n" );
-            argp_usage ( state );
-        }
         break;
 
     default:
@@ -80,7 +76,7 @@ config_t parse_opt ( int argc, char* * argv ) {
     cfg.dump = 0;
     cfg.submaps = 1;
     cfg.input_file    = NULL;
-    cfg.output_prefix = "out_";
+    cfg.output_prefix = NULL;
     cfg.tileset_file  = "tileset.pov";
     argp_parse ( &argp, argc, argv, 0, 0, &cfg );
 

@@ -55,6 +55,7 @@ union {
     texture { pigment { color COL filter 1.0 } }
   }
   scale <0.2,0.2,0.25>
+  scale 0.7
   translate 0.5*z
 }
 #end

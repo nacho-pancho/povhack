@@ -3,14 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "nethack.h"
 
-#define NWINDOWS      10
-
-#define WIN_BASE      0 // special 'base' window, for 'absolute screen' positioning
-#define WIN_MESSAGE   1 // most of the messages 
-#define WIN_STATUS    2 // status
-#define WIN_MAP       3 // these don't get absolute positioning, apparently
-#define WIN_INVEN     4 // inventory
 
 typedef struct {
   int nrows;
@@ -32,7 +26,13 @@ void window_reset(window_t* f);
 void window_copy(window_t* dst, const window_t* src);
 
 void window_put(window_t* window, int c);
-
+/**
+ * for debugging, with extra stuff around
+ */
 void window_dump(window_t* window, FILE* out);
+/**
+ * for actual storage; each character is printed with two bytes: the ascii character, and the color as a hex '0-9A-F'
+ */
+void window_save(window_t* window, FILE* out);
 
 #endif

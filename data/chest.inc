@@ -48,5 +48,6 @@
 #declare Chest = union {
   object { Chest0 texture { ChestTex0 } scale <1.075,1,1> }
   object { Chest1 } texture { ChestTex1 }
+  scale 0.7
   rotate 90*x+25*z 
 }

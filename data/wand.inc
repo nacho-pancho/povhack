@@ -15,10 +15,10 @@
   pigment { color <0.95,0.85,0.70> } 
   finish
   { 
-    diffuse 0.75
+    diffuse 1.0
     brilliance 2
-    specular 1.0 roughness 0.001
-//    phong 1.0 phong_size 100    
+//    specular 1.0 roughness 0.001
+    phong 1.0 phong_size 100    
   }
 }
 
@@ -34,7 +34,7 @@
   sphere { <0.5,0,0>,0.5 }
   scale 0.7
   rotate -90*y
-  rotate 20*x+20*z
+  rotate 30*x+30*z
   translate 0.2*z
   texture { WandTex }
 }

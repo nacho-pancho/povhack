@@ -6,7 +6,6 @@
 
 #include "logging.h"
 #include "options.h"
-#include "vt100.h"
 #include "map.h"
 #include "nethack.h"
 #include "motion.h"
@@ -24,6 +23,15 @@ void map_to_pov(terminal_t* term,
 		const config_t* cfg,
 		FILE* outf );
 
+/**
+ * generates the text overlay as a POV scene
+ */
+void txt_to_pov(terminal_t* term,
+		terminal_t* prev_term,
+		int frame,
+		double time,
+		const config_t* cfg,
+		FILE* outf );
 
 //------------------------------------------------------------
 
@@ -32,10 +40,17 @@ int main ( int argc, char * argv[] ) {
     
     char ofname[128];
     FILE * fin = NULL;
-    
+    FILE* fout = NULL;
     printf ( "POVHACK\n" );
     //
     //
+    if (!cfg.input_file) {
+      error("Must specify input file with -i option\n");
+      exit(1);
+    } else if (!cfg.output_prefix) {
+      error("Must specify output file prefix with -o option\n");
+      exit(1);
+    }
     fin = fopen ( cfg.input_file, "r" );
     if (!fin) {
       fprintf(stderr,"could not open file %s for reading.\n",cfg.input_file);
@@ -65,7 +80,7 @@ int main ( int argc, char * argv[] ) {
 	  fprintf(fdump,"END OF DATA: FRAME %4d TIME %4d\n",frame_number,s.moves);
 	  fprintf(fdump,"====================\n");
 	  print_status(&s,fdump);
-	  for (int w = 1; w <= WIN_INVEN; ++w) {
+	  for (int w = 1; w <= WIN_INVENTORY; ++w) {
 	    fprintf(fdump,"\nWINDOW NUMBER %4d\n",w);
 	    window_dump(term->windows[w],fdump);
 	  }
@@ -76,17 +91,40 @@ int main ( int argc, char * argv[] ) {
 	  fclose(fdump);
 	}
 	//
-	// generate POV file(s)
+	// generate POV frame from window map
 	//
 	double step = 1.0/(double)cfg.submaps;
 	for (double T = step; T <= 1.0; T += step) {
-	  snprintf(ofname,127,"%s_%08d.pov",cfg.output_prefix,video_number);
-	  FILE* fout = fopen(ofname,"w");
+	  snprintf(ofname,127,"%s_map_%08d.pov",cfg.output_prefix,video_number);
+	  fout = fopen(ofname,"w");
 	  if (!fout) exit(1);
 	  map_to_pov(term,prev_term,frame_number,T,&cfg,fout);
 	  fclose(fout);
+
+	  snprintf(ofname,127,"%s_txt_%08d.pov",cfg.output_prefix,video_number);
+	  fout = fopen(ofname,"w");
+	  if (!fout) exit(1);
+	  txt_to_pov(term,prev_term,frame_number,T,&cfg,fout);
+	  fclose(fout);
 	  video_number ++;
 	}
+	//
+	// save other windows
+	//
+	snprintf(ofname,127,"%s_%08d_msg.txt",cfg.output_prefix,frame_number);
+	fout = fopen(ofname,"w");
+	window_save(term->windows[WIN_MESSAGE],  fout);
+	fclose(fout);
+
+	snprintf(ofname,127,"%s_%08d_sta.txt",cfg.output_prefix,frame_number);
+	fout = fopen(ofname,"w");
+	window_save(term->windows[WIN_STATUS],   fout);
+	fclose(fout);
+	
+	snprintf(ofname,127,"%s_%08d_inv.txt",cfg.output_prefix,frame_number);
+	fout = fopen(ofname,"w");
+	window_save(term->windows[WIN_INVENTORY],fout);
+	fclose(fout);
 	//
 	// move on
 	//
@@ -391,3 +429,77 @@ void map_to_pov(terminal_t* term,
   //
 
 }
+
+
+void txt_to_pov(terminal_t* term1,
+		terminal_t* term0,
+		int frame,
+		double T, // 0 < T <= 1
+		const config_t* cfg,
+		FILE* outf ) {
+  window_t* w1, *w0;
+  fputs("#version 3.7;\n",outf);
+  fputs("#include \"terminal.inc\"\n",outf);
+
+  // message
+  w1 = term1->windows[WIN_MESSAGE];
+  w0 = term0->windows[WIN_MESSAGE];
+  for (int y = 0; y < 2; ++y) {
+    for (int x = 0; x < w1->ncols; ++x) {
+      const int k = y*w1->ncols+x;
+      const char c0 = w0->ascii[k];
+      const int  s0 = w0->color[k];
+      const char c1 = w1->ascii[k];      
+      const int  s1 = w1->color[k];
+      if ((c0 == ' ') && (c1 == ' '))
+	continue;
+      if (c0 != ' ') {  // fade out
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y);
+      }
+      if (c1 != ' ') { // fade out 
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y);
+      }
+    }
+  }
+  // status relative to bottom of the screen , which is y=40
+  w1 = term1->windows[WIN_STATUS];
+  w0 = term0->windows[WIN_STATUS];
+  for (int y = w1->nrows-2; y < w1->nrows; ++y) {
+    for (int x = 0; x < w1->ncols; ++x) {
+      const int k = y*w1->ncols+x;
+      const char c0 = w0->ascii[k];
+      const int  s0 = w0->color[k];
+      const char c1 = w1->ascii[k];      
+      const int  s1 = w1->color[k];
+      if ((c0 == ' ') && (c1 == ' '))
+	continue;
+      if (c0 != ' ') {  // fade out
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y+15);
+      }
+      if (c1 != ' ') { // fade out 
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y+15);
+      }
+    }
+  }  
+  // inventory
+  w1 = term1->windows[WIN_INVENTORY];
+  w0 = term0->windows[WIN_INVENTORY];
+  for (int y = 0; y < w1->nrows; ++y) {
+    for (int x = 40; x < w1->ncols; ++x) {
+      const int k = y*w1->ncols+x;
+      const char c0 = w0->ascii[k];
+      const int  s0 = w0->color[k];
+      const char c1 = w1->ascii[k];      
+      const int  s1 = w1->color[k];
+      if ((c0 == ' ') && (c1 == ' '))
+	continue;
+      if (c0 != ' ') {  // fade out
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y);
+      }
+      if (c1 != ' ') { // fade out 
+	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y);
+      }
+    }
+  }
+}
+

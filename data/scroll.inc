@@ -23,7 +23,8 @@
 #declare Scroll  = union { 
   object { ScrollPole }
   object { ScrollPaper }
+  scale 0.15
   rotate 90*x
-  scale 0.2
-  translate 0.5*y
+  rotate -10*x-30*z
+  translate 0.5*z
 }

@@ -69,4 +69,5 @@
   object { Blade }
   object { Handle } 
   scale 0.7
+  rotate 30*x-20*z
 }

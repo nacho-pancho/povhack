@@ -41,7 +41,7 @@ union {
     }
   }
   object { BookPages texture { PagesTex } } 
-  scale 0.3
+  scale 0.5
   rotate <20,0,15>
   translate 0.4*z
 }

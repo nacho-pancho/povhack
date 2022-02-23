@@ -16,6 +16,12 @@
 #define FLAG_FEMALE        0x0800
 #define FLAG_BADCOORDS     0x1000
 
+#define NWINDOWS      10
+#define WIN_BASE      0 // special 'base' window, for 'absolute screen' positioning
+#define WIN_MESSAGE   1 // most of the messages 
+#define WIN_STATUS    2 // status
+#define WIN_MAP       3 // these don't get absolute positioning, apparently
+#define WIN_INVENTORY 4 // inventory
 
 
 #endif

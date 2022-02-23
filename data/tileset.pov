@@ -3,6 +3,11 @@
 #include "stones.inc"
 #include "shapes.inc"
 
+global_settings { 
+  ambient_light 0.2*White 
+  assumed_gamma 1.0
+}
+
 #include "nhglobals.inc"
 #include "nhobjects.inc"
 #include "nhstructures.inc"
@@ -12,35 +17,7 @@
 // "easy" if you know PovRay :)
 //==================================================================
 
-global_settings { 
-  ambient_light 0.2*White 
-  assumed_gamma 1.0
-}
 
-//
-// NetHack uses (usually) 16 color codes
-// the colors below are the standard VT100/ANSI assignments
-// to these codes
-// you may change them to whatever you like
-//
-#declare ANSIColors = array[16]
-#declare ANSIColors[0] =  0.66*White;  // actually used as 'normal'
-#declare ANSIColors[1] =  0.5*Red; 
-#declare ANSIColors[2] =  0.5*Green;
-#declare ANSIColors[3] =  Orange; 
-#declare ANSIColors[4] =  0.5*Blue;
-#declare ANSIColors[5] =  0.5*Magenta; // could be Purple
-#declare ANSIColors[6] = 0.5*Cyan;
-#declare ANSIColors[7] = 0.66*White; // 'normal' color in Nethack
-
-#declare ANSIColors[8] =  0.66*White; // seldom used
-#declare ANSIColors[9] =   Red;
-#declare ANSIColors[10] = Green;
-#declare ANSIColors[11] = Yellow; 
-#declare ANSIColors[12] = Blue ;
-#declare ANSIColors[13] = Magenta ;
-#declare ANSIColors[14] = Cyan ;
-#declare ANSIColors[15] = White;
 
 #declare TileFont = "fonts/FreeMono.ttf";
 #declare TileThickness = 0.1;
@@ -151,9 +128,16 @@ global_settings {
   // /: wand
   #declare Tiles[47][col] = Wand
   #declare Tiles[61][col] = Ring  
+  // ): weapon
   #declare Tiles[40][col] = Sword
+  // [: shield
   #declare Tiles[91][col] = Shield
+  // ?: scroll
   #declare Tiles[63][col] = Scroll
+  // %: food 
+  #declare Tiles[37][col] = Drumstick
+  // (: tool
+  //#declare Tiles[40][3]  = Chest
 #end
 // ( weapon
 
@@ -171,14 +155,12 @@ global_settings {
 #declare Tiles[42][7]  = Rock
 #declare Tiles[42][0]  = Rock
 #declare Tiles[42][8]  = Rock
-#declare Tiles[41][15] = Rock
+#declare Tiles[42][15] = Rock
 
 #declare Tiles[95][8] = Altar
 #declare Tiles[95][15] = Altar
 
 // %: food
-#declare Tiles[37][3] = Drumstick
-#declare Tiles[37][11] = Drumstick
 // &
 // # cyan: grating
 // }: water

@@ -124,3 +124,13 @@ void window_dump(window_t* window, FILE* out) {
   hruler(out,window->ncols);
 }
 
+void window_save(window_t* window, FILE* out) {
+  for (int y = 0, i = 0; y < window->nrows; y++) {
+    for (int x = 0; x < window->ncols; x++, i++) {
+      fputc(window->ascii[i] >= 0x20 ? window->ascii[i] :' ', out);
+      fputc(window->color[i] < 9 ? window->color[i]+'0' :window->color[i]-10+'A', out);
+    }
+    fputc('\n',out);
+  }
+}
+

@@ -4,7 +4,6 @@
  */
 #ifndef TERMINAL_H
 #define TERMINAL_H
-
 #include "window.h"
 #include "map.h"
 /**
@@ -22,11 +21,12 @@
  * window ids are assigned dynamically and depend of compile time stuff.
  * for Nethack 3.6.6, these appear to be the assignments
  *
- *   0,1: in-game messages to the player such as 'The grid bug bites' (can't tell the difference!)
+ *   0
+ *   1: messages to the player such as 'The grid bug bites'
  *   2: status bar
  *   3: map
  *   4: inventory
- *   5: interactive message to the user (dialog)
+ *   5: other text windows
  *   6: epitaph
  */  
 typedef struct {
