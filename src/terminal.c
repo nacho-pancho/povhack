@@ -65,6 +65,8 @@ typedef struct {
   int16_t par[7];
   int16_t npar;
   int16_t code;
+  char string[32]; // long enough!
+  int16_t len;
 } cmd_t;
 
 #define ESC_CHAR '\033'
@@ -281,8 +283,6 @@ static void set_style(terminal_t* f,cmd_t* cmd) {
  */ 
 static void end_data(terminal_t* f) {
 
-  debug("END DATA: w=%d\n", f->current_window);
-
   window_t* w = CW(f);
   if (f->current_window == WIN_MAP) {
     map_set_hero_position(f->map,w->cx,w->cy);
@@ -314,15 +314,15 @@ static void tiledata(terminal_t* f,cmd_t* cmd) {
   } else if (subcmd == 2) { // switch to window
 
     xdebug("select window %d\n",cmd->par[2]);
-  
-    f->current_window = cmd->par[2];
+    if (cmd->par[2] > 0) // window 0 is some kind of 'global' window
+      f->current_window = cmd->par[2];
   } else if (subcmd == 3) { // end map!
     end_data(f);
   }
 }
 
 static void unhandled_command(terminal_t* f,cmd_t* cmd) {
-  warn("unhandled command:");
+  warn("unhandled command: %s \n",cmd->string);
   print_cmd(cmd);
 }
 
@@ -387,6 +387,9 @@ void terminal_put(terminal_t* f, int c) {
       within_command = 1;
       cmd.code = 0;
       cmd.npar = 0;
+      cmd.len = 2;
+      cmd.string[0] = 'E';
+      cmd.string[1] = '[';
       parval = -1; // no parameters yet
     } else {
       // not a command,  print the char in the corresponding layer
@@ -425,6 +428,7 @@ void terminal_put(terminal_t* f, int c) {
       window_put(w,c);
     }
   } else { // within command
+    cmd.string[cmd.len++] = c;
       if ( isalpha(c) ) {
 	// end of command
 	if (parval >=0 ) // trailing parameter value
@@ -432,6 +436,7 @@ void terminal_put(terminal_t* f, int c) {
 	cmd.code = c;
 	within_command = 0;
 	// apply command
+	cmd.string[cmd.len] = 0;
 	apply_cmd(f,&cmd);
       } else if (c == ';') {
 	// finished a new parameter of the command, a new parameter comes
@@ -446,7 +451,8 @@ void terminal_put(terminal_t* f, int c) {
       } else if ( c == '?' ) {
 	// ignore extended command starting with [?
       } else {
-	warn("unable to interpret sequence. ESC %c\n",c);
+	cmd.string[cmd.len] = 0;
+	warn("unable to interpret command:. ESC %s\n",cmd.string);
       }
   }
 }

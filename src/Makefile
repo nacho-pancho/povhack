@@ -9,7 +9,7 @@ OBJ= \
 	logging.o \
 	util.o
 
-all: povhack test
+all: povhack 
 
 .c.o:
 	gcc -Wall -g -c $<

@@ -65,6 +65,8 @@ int main ( int argc, char * argv[] ) {
       int c = fgetc(fin);
       terminal_put(term,c);
       if (term->data_has_ended) {
+	debug("END OF DATA. frame %d active window %d\n",
+	      frame_number,term->current_window);
 	//
 	// dump current windows
 	//
@@ -111,25 +113,37 @@ int main ( int argc, char * argv[] ) {
 	//
 	// save other windows
 	//
-	snprintf(ofname,127,"%s_%08d_msg.txt",cfg.output_prefix,frame_number);
+	snprintf(ofname,127,"%s_msg_%08d.txt",cfg.output_prefix,frame_number);
 	fout = fopen(ofname,"w");
 	window_save(term->windows[WIN_MESSAGE],  fout);
 	fclose(fout);
 
-	snprintf(ofname,127,"%s_%08d_sta.txt",cfg.output_prefix,frame_number);
+	snprintf(ofname,127,"%s_sta_%08d.txt",cfg.output_prefix,frame_number);
 	fout = fopen(ofname,"w");
 	window_save(term->windows[WIN_STATUS],   fout);
 	fclose(fout);
 	
-	snprintf(ofname,127,"%s_%08d_inv.txt",cfg.output_prefix,frame_number);
+	snprintf(ofname,127,"%s_inv_%08d.txt",cfg.output_prefix,frame_number);
 	fout = fopen(ofname,"w");
 	window_save(term->windows[WIN_INVENTORY],fout);
 	fclose(fout);
 	//
 	// move on
 	//
+	// update state
+	//
 	term->data_has_ended = 0;
-	terminal_copy(prev_term,term);
+	//
+	// only messages and status are persistent
+	// and need to be preserved
+	//
+	window_copy(prev_term->windows[WIN_MESSAGE],term->windows[WIN_MESSAGE]);
+	window_copy(prev_term->windows[WIN_STATUS],term->windows[WIN_STATUS]);
+	// previous map is only updated if the current window was the map
+	if (term->current_window == WIN_MAP) {
+	  window_copy(prev_term->windows[WIN_MAP],term->windows[WIN_MAP]);
+	  map_copy(prev_term->map,term->map);
+	}
 	frame_number++;
       }
     }
@@ -384,7 +398,8 @@ void map_to_pov(terminal_t* term,
       put_floor(x1,y1,outf);
       if (g0->code != g1->code) {
 	// not same glyph!
-	warn("frame %06d: not same glyph g1:%4d %c g0:%4d %c !\n",frame,g1->code,g1->ascii,g0->code,g0->ascii);
+	// surely we are not in the right window
+	// warn("frame %06d: not same glyph g1:%4d %c g0:%4d %c !\n",frame,g1->code,g1->ascii,g0->code,g0->ascii);
 	dx0 = dx1;
 	dy0 = dy1;
 	x = (1.0-T)*x0 + T*x1;
