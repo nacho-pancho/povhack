@@ -143,6 +143,9 @@ int main ( int argc, char * argv[] ) {
 	if (term->current_window == WIN_MAP) {
 	  window_copy(prev_term->windows[WIN_MAP],term->windows[WIN_MAP]);
 	  map_copy(prev_term->map,term->map);
+	  window_reset(term->windows[WIN_MESSAGE]);
+	  window_reset(term->windows[WIN_STATUS]);
+	  window_reset(term->windows[WIN_INVENTORY]);
 	}
 	frame_number++;
       }
