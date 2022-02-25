@@ -68,6 +68,6 @@
 #declare Sword = union {
   object { Blade }
   object { Handle } 
-  scale 0.7
+  scale 0.4
   rotate 30*x-20*z
 }

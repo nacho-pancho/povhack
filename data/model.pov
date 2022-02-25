@@ -17,4 +17,7 @@ camera {
   angle 40
 }
 
-
+object { Floor translate -y }
+object { Wall translate -y }
+object { Floor }
+object { Fountain} 

@@ -73,7 +73,7 @@
 #declare Shield = union { 
   object { Shield0 texture { pigment { color Gray } finish { Metal } } }
   object { Shield1 texture { ShieldTex } }
-  scale 0.2
+  scale 0.15
   translate 0.5*z  
   rotate 20*x+30*z
 }
