@@ -6,7 +6,7 @@
 #include "shapes.inc"
 #include "textures.inc"
 
-light_source {  <  2.000,   0.000,  5.000 >, 0.25*White }
+light_source {  <  2.000,   2.000,  5.000 >, 0.25*White }
 
 camera {
   perspective
@@ -20,4 +20,4 @@ camera {
 object { Floor translate -y }
 object { Wall translate -y }
 object { Floor }
-object { Fountain} 
+object { Toolbox } 
