@@ -18,6 +18,8 @@ typedef struct config {
     const char * output_prefix;
   int submaps;
   int dump;
+  int begin_time;
+  int end_time;
 } config_t;
 
 config_t parse_opt ( int argc, char* * argv );

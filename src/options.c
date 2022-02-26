@@ -5,6 +5,8 @@
 static struct argp_option options[] = {
     {"verbose",        'v', 0, OPTION_ARG_OPTIONAL, "Produce verbose output", 0 },
     {"quiet",          'q', 0, OPTION_ARG_OPTIONAL, "Don't produce any output", 0 },
+    {"begin",          'b', "int",    0, "rendering starts starts when the number of movements reaches this value", 0 },
+    {"end",            'e', "int",    0, "rendering stops when the number of movements reaches this value", 0 },
     {"input",          'i', "path",    0, "input file", 0 },
     {"prefix",         'o', "path",    0, "output file prefix", 0 },
     {"dump",           'd', 0, OPTION_ARG_OPTIONAL, "Save dump of frames to readable files.", 0 },
@@ -33,6 +35,12 @@ static int _parse_opt ( int key, char * arg, struct argp_state * state ) {
         break;
     case 'i':
         cfg->input_file = arg;
+        break;
+    case 'b':
+      cfg->begin_time = atoi(arg);
+        break;
+    case 'e':
+      cfg->end_time = atoi(arg);
         break;
     case 'o':
         cfg->output_prefix = arg;
@@ -75,6 +83,8 @@ config_t parse_opt ( int argc, char* * argv ) {
     config_t cfg;
     cfg.dump = 0;
     cfg.submaps = 1;
+    cfg.begin_time = 0;
+    cfg.end_time = 100000;
     cfg.input_file    = NULL;
     cfg.output_prefix = NULL;
     cfg.tileset_file  = "tileset.pov";

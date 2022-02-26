@@ -137,6 +137,7 @@ int main ( int argc, char * argv[] ) {
 	// only messages and status are persistent
 	// and need to be preserved
 	//
+	window_copy(prev_term->windows[WIN_BASE],term->windows[WIN_BASE ]);
 	window_copy(prev_term->windows[WIN_MESSAGE],term->windows[WIN_MESSAGE]);
 	window_copy(prev_term->windows[WIN_STATUS],term->windows[WIN_STATUS]);
 	// previous map is only updated if the current window was the map
@@ -447,75 +448,54 @@ void map_to_pov(terminal_t* term,
   //
 
 }
-
-
+  
 void txt_to_pov(terminal_t* term1,
 		terminal_t* term0,
 		int frame,
 		double T, // 0 < T <= 1
 		const config_t* cfg,
 		FILE* outf ) {
-  window_t* w1, *w0;
+  window_t* w;
   fputs("#version 3.7;\n",outf);
   fputs("#include \"terminal.inc\"\n",outf);
-
   // message
-  w1 = term1->windows[WIN_MESSAGE];
-  w0 = term0->windows[WIN_MESSAGE];
+  fputs("\n\n//\n// MESSAGE\n//\n\n",outf);
+  w = term1->windows[WIN_MESSAGE];
   for (int y = 0; y < 2; ++y) {
-    for (int x = 0; x < w1->ncols; ++x) {
-      const int k = y*w1->ncols+x;
-      const char c0 = w0->ascii[k];
-      const int  s0 = w0->color[k];
-      const char c1 = w1->ascii[k];      
-      const int  s1 = w1->color[k];
-      if ((c0 == ' ') && (c1 == ' '))
-	continue;
-      if (c0 != ' ') {  // fade out
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y);
-      }
-      if (c1 != ' ') { // fade out 
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y);
-      }
+    for (int x = 0; x < w->ncols; ++x) {
+      const int k = y*w->ncols+x;
+      const char c1 = w->ascii[k];      
+      if (c1 <= ' ') continue;
+      const int  s1 = w->color[k];
+      fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,0.0,x,y);
     }
   }
-  // status relative to bottom of the screen , which is y=40
-  w1 = term1->windows[WIN_STATUS];
-  w0 = term0->windows[WIN_STATUS];
-  for (int y = w1->nrows-2; y < w1->nrows; ++y) {
-    for (int x = 0; x < w1->ncols; ++x) {
-      const int k = y*w1->ncols+x;
-      const char c0 = w0->ascii[k];
-      const int  s0 = w0->color[k];
-      const char c1 = w1->ascii[k];      
-      const int  s1 = w1->color[k];
-      if ((c0 == ' ') && (c1 == ' '))
-	continue;
-      if (c0 != ' ') {  // fade out
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y+15);
-      }
-      if (c1 != ' ') { // fade out 
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y+15);
-      }
+  fputs("\n\n//\n// STATUS\n//\n\n",outf);
+  w = term1->windows[WIN_STATUS];
+  for (int y = w->nrows-2; y < w->nrows; ++y) {
+    for (int x = 0; x < w->ncols; ++x) {
+      const int k = y*w->ncols+x;
+      const char c1 = w->ascii[k];      
+      if (c1 <= ' ') continue;
+      const int  s1 = w->color[k];
+      fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,0.0,x,y+15);
     }
-  }  
-  // inventory
-  w1 = term1->windows[WIN_INVENTORY];
-  w0 = term0->windows[WIN_INVENTORY];
-  for (int y = 0; y < w1->nrows; ++y) {
-    for (int x = 40; x < w1->ncols; ++x) {
-      const int k = y*w1->ncols+x;
-      const char c0 = w0->ascii[k];
-      const int  s0 = w0->color[k];
-      const char c1 = w1->ascii[k];      
-      const int  s1 = w1->color[k];
-      if ((c0 == ' ') && (c1 == ' '))
-	continue;
-      if (c0 != ' ') {  // fade out
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c0,s0,1.0-T,x,y);
-      }
-      if (c1 != ' ') { // fade out 
-	fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,T,x,y);
+  }
+  //
+  // windows above STATUS only appear when active
+  //
+  for (int r = WIN_INVENTORY; r < NWINDOWS; ++r) {
+    if (term1->current_window == r) {
+      fprintf(outf,"\n\n//\n// WINDOW %d\n//\n\n",r);
+      w = term1->windows[r];
+      for (int y = 0; y < w->nrows; ++y) {
+	for (int x = 0; x < w->ncols; ++x) {
+	  const int k = y*w->ncols+x;
+	  const char c1 = w->ascii[k];      
+	  if (c1 <= ' ') continue;
+	  const int  s1 = w->color[k];
+	  fprintf(outf,"PutString(\"%c\",%d,%f,%d,%d)\n",c1,s1,0.0,x,y);      
+	}
       }
     }
   }

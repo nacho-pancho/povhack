@@ -314,8 +314,8 @@ static void tiledata(terminal_t* f,cmd_t* cmd) {
   } else if (subcmd == 2) { // switch to window
 
     xdebug("select window %d\n",cmd->par[2]);
-    if (cmd->par[2] > 0) // window 0 is some kind of 'global' window
-      f->current_window = cmd->par[2];
+    //if (cmd->par[2] > 0) // window 0 is some kind of 'global' window
+    f->current_window = cmd->par[2];
   } else if (subcmd == 3) { // end map!
     end_data(f);
   }

@@ -24,4 +24,5 @@ do
 	scripts/merge_txt_and_map.sh $i
 done
 
-scripts/mkvideo.sh ${i}_%08d.jpg ${i}.mp4
+ffmpeg -i ${1}_frm_%08d.jpg ${1}.mp4
+

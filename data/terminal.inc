@@ -57,7 +57,8 @@ text {
   0.1 // thickness
   0.0 // shift
   translate <X0+dX*X,Y0+dY*Y,0>
-  pigment { color ANSIColors[C] transmit A }
+//  pigment { color ANSIColors[C] transmit A }
+  pigment { color ANSIColors[C] }
 } 
 #end
 //other:
