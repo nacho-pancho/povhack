@@ -26,5 +26,6 @@
   object { Box }
   object { Handle }
   object { BoxInside }
+  rotate -20*z
 }
 
