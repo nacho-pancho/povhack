@@ -27,8 +27,8 @@
     normal { granite 0.2 scale 20 }
     finish { diffuse 0.8 }
   }
-  rotate 90*x
-  scale <0.05,0.05,0.07>
+  rotate 90*x+45*z
+  scale <0.053,0.053,0.07>
 }
 
 #declare Wall = box { 

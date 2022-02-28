@@ -11,29 +11,28 @@
   pigment {
     bozo
     color_map {
-      [0.0 0.4 color Brown1 color Brown1 ]
-      [0.4 1.01 color Brown3 color Brown3 ]
+      [0.0 0.4 color 0.3*Brown1 color 0.3*Brown1 ]
+      [0.4 1.01 color 0.4*Brown3 color 0.4*Brown3 ]
     }
     scale <4, 0.05, 0.05>
   }
   rotate y*45
   scale 0.1
-} texture {
+  } 
+  texture {
   finish {
-    phong 1
-    phong_size 100
-    brilliance 3
-    diffuse 0.8
+    brilliance 2
+    diffuse 0.6
   }
   pigment {
     wood
     turbulence 0.025
     
     color_map {
-      [0.0  0.30 color Brown2 color Brown4 ]
-      [0.30 0.40 color Brown4 color Brown5 ]
-      [0.40 0.50 color Brown5 color Brown4 ]
-      [0.85 1.01 color Brown4 color Brown2 ]
+      [0.0  0.30 color 0.3*Brown2 color 0.3*Brown4 ]
+      [0.30 0.40 color 0.3*Brown4 color 0.3*Brown5 ]
+      [0.40 0.50 color 0.3*Brown5 color 0.3*Brown4 ]
+      [0.85 1.01 color 0.3*Brown4 color 0.3*Brown2 ]
     }
     
     scale <3.5, 1, 1>
@@ -41,7 +40,7 @@
     rotate 1.5*y
   }
   rotate 45*z
-  scale 0.1
+  scale 0.3
 }
 
 #declare Door = union {
