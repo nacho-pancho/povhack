@@ -30,6 +30,6 @@
   object { Bone rotate  90*x 
     pigment  { color <1.0,0.9,0.8> } 
   }
-  scale 0.6
+  scale 0.4
 }
 

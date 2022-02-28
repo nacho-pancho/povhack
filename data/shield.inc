@@ -74,6 +74,6 @@
   object { Shield0 texture { pigment { color Gray } finish { Metal } } }
   object { Shield1 texture { ShieldTex } }
   scale 0.15
-  translate 0.5*z  
+  translate 0.4*z  
   rotate 20*x+30*z
 }

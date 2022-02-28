@@ -199,16 +199,23 @@ int is_corner(map_t* map, int x, int y) {
   if ((g->ascii != '-') || (g->color & 0x08) != 0) 
     return NO_CORNER;
   // 
-  // pending: may be a door
   int nwall = is_wall(map,x,y-1) || is_door(map,x,y-1);
   int swall = is_wall(map,x,y+1) || is_door(map,x,y+1);
+  int ewall = is_wall(map,x+1,y) || is_door(map,x+1,y);
+  int wwall = is_wall(map,x-1,y) || is_door(map,x-1,y);
   if (!nwall && !swall) {
     return NO_CORNER;
   }
   // it is a corner
   // now try to determine orientation
   if (nwall && swall) { // all-sides corner
-    return ALL_CORNER;
+    if (ewall && wwall) 
+      return ALL_CORNER;
+    else if (ewall) {
+      return NES_CORNER;
+    } else {
+      return NWS_CORNER;
+    }
   } else if (swall) { // a wall to the south
     // either NW or NE corner
     if (is_wall(map,x+1,y) || is_door(map,x+1,y)) {

@@ -68,6 +68,8 @@ int is_wall(map_t* map, int x, int y);
 #define SW_CORNER 3
 #define SE_CORNER 4
 #define ALL_CORNER 5
+#define NES_CORNER 6
+#define NWS_CORNER 7
 
 int is_corner(map_t* m, int x, int y);
 

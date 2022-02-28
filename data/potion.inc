@@ -69,6 +69,6 @@
     }
   }
   scale 0.3
-  translate 0.2*z
+  translate 0.1*z
 }
 #end

@@ -10,6 +10,7 @@
     crackle color_map{[0.0 0.7*Brown2][0.05 0.7*Brown2][0.05 0.3*White][1.0 0.3*White]}
   }
   normal { crackle 1.6 }
+  finish { diffuse 0.8 }
   scale <0.3,0.3,0.3>
 }
 

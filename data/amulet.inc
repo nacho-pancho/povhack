@@ -22,7 +22,7 @@ union {
     }
   }
   scale 0.3
-  rotate 15*z+20*x   
-  translate 0.3*z
+  rotate -15*z+20*x   
+  translate 0.2*z
 }
 #end

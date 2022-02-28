@@ -107,7 +107,6 @@ global_settings {
 //
 #declare Tiles[32][0] = box { 
   Wall
-  finish { ambient 0 }
   no_image
 }
 #declare Tiles[32][7] = Tiles[32][0];

@@ -1,4 +1,5 @@
 OBJ= \
+	povray.o \
 	motion.o \
 	status.o \
 	terminal.o \

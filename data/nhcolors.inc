@@ -7,17 +7,17 @@
 // you may change them to whatever you like
 //
 #declare ANSIColors = array[16]
-#declare ANSIColors[0] =  0.66*White;  // actually used as 'normal'
-#declare ANSIColors[1] =  0.5*Red; 
-#declare ANSIColors[2] =  0.5*Green;
+#declare ANSIColors[0] =  0.80*White;  // actually used as 'normal'
+#declare ANSIColors[1] =  0.7*Red; 
+#declare ANSIColors[2] =  0.7*Green;
 #declare ANSIColors[3] =  Orange; 
-#declare ANSIColors[4] =  0.5*Blue;
-#declare ANSIColors[5] =  0.5*Magenta; // could be Purple
-#declare ANSIColors[6] = 0.5*Cyan;
-#declare ANSIColors[7] = 0.66*White; // 'normal' color in Nethack
+#declare ANSIColors[4] =  0.7*Blue;
+#declare ANSIColors[5] =  0.7*Magenta; // could be Purple
+#declare ANSIColors[6] = 0.7*Cyan;
+#declare ANSIColors[7] = 0.7*White; // 'normal' color in Nethack
 
-#declare ANSIColors[8] =  0.66*White; // seldom used
-#declare ANSIColors[9] =   Red;
+#declare ANSIColors[8]  = 0.7*White; // seldom used
+#declare ANSIColors[9]  = Red;
 #declare ANSIColors[10] = Green;
 #declare ANSIColors[11] = Yellow; 
 #declare ANSIColors[12] = Blue ;
