@@ -434,7 +434,7 @@ void map_to_pov(terminal_t* term,
 	fprintf ( outf, "light_source { LocalLight  translate < %7.3f, %7.3f,  0 > }\n", x, y);
 	fprintf ( outf, "camera {\n" );
 	fprintf ( outf, "  perspective\n" );
-	fprintf ( outf, "  right (1920/1080)*x\n" );
+	fprintf ( outf, "  right AspectRatio*x\n" );
 	fprintf ( outf, "  sky z\n" );
 	fprintf ( outf, "  location < %7.3f+CamDistX, %7.3f+CamDistY, CameraHeight> \n", x, y);
 	fprintf ( outf, "  look_at  < %7.3f, %7.3f, LookAtHeight>\n", x, y );

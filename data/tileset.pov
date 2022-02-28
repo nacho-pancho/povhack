@@ -33,7 +33,7 @@ global_settings {
 #declare LookAtHeight  = TileSize;
 #declare CamDistX = -0.3; // = -1;
 #declare CamDistY = 3; // =  5;
-
+#declare AspectRatio = 1920.0/1080.0;
 #declare LocalLightColor = color <1.0,0.65,0.2>;
 #declare GlobalLightColor = White;
 
@@ -119,25 +119,24 @@ global_settings {
   #declare Tiles[33][col] = Potion( ANSIColors[col] )
   // ": amulet
   #declare Tiles[34][col] = Amulet( ANSIColors[col] )
+  // %: food 
+  #declare Tiles[37][col] = Drumstick
+  // (: tool
+  #declare Tiles[40][col]  = Chest
+  // ): weapon
+  #declare Tiles[41][col] = Sword
   // *: gems
   #declare Tiles[42][col] = Gem( ANSIColors[col] )
   // +: book
   #declare Tiles[43][col] = Book( ANSIColors[col] )
-  // ?: scroll
-  #declare Tiles[43][col] = Book( ANSIColors[col] )
   // /: wand
   #declare Tiles[47][col] = Wand
+  // ": ring
   #declare Tiles[61][col] = Ring  
-  // ): weapon
-  #declare Tiles[40][col] = Sword
-  // [: shield
-  #declare Tiles[91][col] = Shield
   // ?: scroll
   #declare Tiles[63][col] = Scroll
-  // %: food 
-  #declare Tiles[37][col] = Drumstick
-  // (: tool
-  //#declare Tiles[40][3]  = Chest
+  // [: shield
+  #declare Tiles[91][col] = Shield
 #end
 // ( weapon
 
@@ -160,7 +159,6 @@ global_settings {
 #declare Tiles[95][8] = Altar
 #declare Tiles[95][15] = Altar
 
-// %: food
 // &
 // # cyan: grating
 // }: water
