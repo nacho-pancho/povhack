@@ -16,8 +16,7 @@ camera {
   look_at  <  0, 0, 0.5 >
   angle 40
 }
-
-object { Floor translate -y }
+PutFloor(0, 0)
+PutFloor(0,-1)
 object { Wall translate -y }
-object { Floor }
 object { Toolbox } 

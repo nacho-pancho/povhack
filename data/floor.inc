@@ -17,11 +17,13 @@
 #declare HallwayTexture = FloorTexture
 
 
-#declare Floor =
+#macro PutFloor(X,Y)
   box {
     < -0.51, -0.51, -0.01 >,< 0.51, 0.51, 0.0 >
+    translate <X,Y,0>
     texture { FloorTexture }
   }
+#end
 
 #declare Trap =
   box {
