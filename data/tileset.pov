@@ -29,9 +29,9 @@ global_settings {
 
 
 //#declare CameraHeight  = 0.7; 
-#declare CameraHeight  = 2.5; 
+#declare CameraHeight  = 4.0; 
 #declare LookAtHeight  = TileSize;
-#declare CamDistX = -0.3; // = -1;
+#declare CamDistX = -1; // = -1;
 #declare CamDistY = 3; // =  5;
 #declare AspectRatio = 1920.0/1080.0;
 #declare LocalLightColor = color <1.0,0.65,0.2>;
@@ -61,7 +61,7 @@ global_settings {
 // torch carried by our hero
 //
 #declare LocalLight =  light_source { 
-    <0,0, LocalLightHeight>, LocalLightColor
+    <0,0, LocalLightHeight>, 0.8*LocalLightColor
     spotlight
     radius 40
     falloff 70 
@@ -69,7 +69,7 @@ global_settings {
 }
 
 #declare GlobalLight =  light_source { 
-    <0, 0, GlobalLightHeight>, 0.3*GlobalLightColor
+    <0, 0, GlobalLightHeight>, 0.2*GlobalLightColor
     area_light 1*x, 1*y, 5, 5
 }
 
