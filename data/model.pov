@@ -18,5 +18,7 @@ camera {
 }
 PutFloor(0, 0)
 PutFloor(0,-1)
-object { Wall translate -y }
-object { Toolbox } 
+PutGround(1,-1)
+PutGround(-1,-1)
+PutWall(0,-1,0)
+object { Door } 

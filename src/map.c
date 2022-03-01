@@ -108,6 +108,16 @@ int is_structure(glyph_t* g) {
   return 0;
 }
 
+int is_ground(glyph_t* g) {
+  char ch = g->ascii;
+  char co = g->color;
+  if ((ch == '#') && (co == 0))
+    return 1;
+  else
+    return 0;
+  
+}
+
 //------------------------------------------------------------
 
 int is_effect(glyph_t* g) {

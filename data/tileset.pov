@@ -70,7 +70,7 @@ global_settings {
 
 #declare GlobalLight =  light_source { 
     <0, 0, GlobalLightHeight>, 0.3*GlobalLightColor
-    area_light 1*x, 1*y, 3, 3
+    area_light 1*x, 1*y, 5, 5
 }
 
 //==================================================================
@@ -105,10 +105,7 @@ global_settings {
 //
 // void / unknown
 //
-#declare Tiles[32][0] = box { 
-  Wall
-  no_image
-}
+#declare Tiles[32][0] = PutVoid(0,0)
 #declare Tiles[32][7] = Tiles[32][0];
 #declare Tiles[32][8] = Tiles[32][0];
 

@@ -94,6 +94,11 @@ int main ( int argc, char * argv[] ) {
 	//
 	// save other windows
 	//
+	snprintf(ofname,127,"%s_map_%08d.txt",cfg.output_prefix,frame_number);
+	fout = fopen(ofname,"w");
+	window_save(term->windows[WIN_MAP],  fout);
+	fclose(fout);
+
 	snprintf(ofname,127,"%s_msg_%08d.txt",cfg.output_prefix,frame_number);
 	fout = fopen(ofname,"w");
 	window_save(term->windows[WIN_MESSAGE],  fout);

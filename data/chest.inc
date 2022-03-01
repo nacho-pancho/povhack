@@ -4,12 +4,13 @@
 #include "textures.inc"
 
 #declare ChestTex0 = texture { 
-  DMFDarkOak scale 0.1
+  DMFDarkOak scale 0.2
   finish { ambient 0 diffuse 0.3 phong 0.3 phong_size 10 }
+  translate 3*x rotate 45*x  
 }
 #declare ChestTex1 = texture { 
-  Rusty_Iron
-  finish { ambient 0 diffuse 0.3 }
+  pigment { color <0.2,0.2,0.25> }
+  finish { diffuse 0.4 brilliance 5 phong 0.8 phong_size 150 metallic }
 }
 
 #declare Chest0 = union {
@@ -46,8 +47,8 @@
 }
 
 #declare Chest = union {
-  object { Chest0 texture { ChestTex0 } scale <1.075,1,1> }
-  object { Chest1 } texture { ChestTex1 }
+  object { Chest0 texture { ChestTex0  } scale <1.075,1,1> }
+  object { Chest1 } texture { ChestTex1  }
   scale 0.7
   rotate 90*x+25*z 
 }
