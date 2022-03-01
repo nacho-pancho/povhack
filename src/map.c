@@ -19,8 +19,43 @@ glyph_t* map_get_object(map_t* f, int x, int y) {
 glyph_t* map_get_monster(map_t* f, int x, int y) {
   return f->monsters + y*f->ncols + x;
 }
+
 glyph_t* map_get_effect(map_t* f, int x, int y) {
   return f->effects + y*f->ncols + x;
+}
+
+static glyph_t null_glyph = {0,0,0,0,0,0,0};
+
+glyph_t* get_north(map_t* m, int l, int x, int y) {
+  if (y > 0) {
+    return m->layers[l] + (y-1)*m->ncols + x;
+  } else {
+    return &null_glyph;
+  }
+}
+
+glyph_t* get_south(map_t* m, int l, int x, int y) {
+  if (y < (m->nrows-1)) {
+    return m->layers[l] + (y+1)*m->ncols + x;
+  } else {
+    return &null_glyph;
+  }
+}
+
+glyph_t* get_west(map_t* m, int l, int x, int y) {
+  if (x > 0) {
+    return m->layers[l] + y*m->ncols + x-1;
+  } else {
+    return &null_glyph;
+  }
+}
+
+glyph_t* get_east(map_t* m, int l, int x, int y) {
+  if (x < (m->ncols-1)) {
+    return m->layers[l] + y*m->ncols + x +1;
+  } else {
+    return &null_glyph;
+  }
 }
 
 //------------------------------------------------------------
@@ -273,10 +308,30 @@ void map_put(map_t* m, int x, int y, int gcode, int gflags, int gchar, int gcolo
   // the floor that was there before.
   //
   m->layers[L][i] = g;
-   
+  
   for (int l = L+1; l < NLAYERS; l++) {
     reset_glyph(&m->layers[l][i]);
   }
+  //
+  // when an object or character appears for the first time,
+  // we need to infer the ground underneath it
+  //
+  if (L > DUNGEON_LAYER) {
+    glyph_t* map_glyph = &m->layers[DUNGEON_LAYER][i];
+    if (map_glyph->code == 0) {
+      const glyph_t* n = get_north(m,DUNGEON_LAYER,x,y);
+      const glyph_t* s = get_south(m,DUNGEON_LAYER,x,y);
+      const glyph_t* e = get_east(m,DUNGEON_LAYER,x,y);
+      const glyph_t* w = get_west(m,DUNGEON_LAYER,x,y);
+      // very crude logic
+      if ((n->ascii == '#') || (s->ascii == '#') || (e->ascii == '#')
+	  || (w->ascii == '#')) {
+	map_glyph->ascii = '#'; // objects appear in rooms
+      } else {
+	map_glyph->ascii = '.'; 
+      }
+    }
+  }	
 }
 
 //------------------------------------------------------------

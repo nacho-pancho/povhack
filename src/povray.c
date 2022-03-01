@@ -3,7 +3,7 @@
 
 //------------------------------------------------------------
 static void put_void(int x, int y, FILE*outf) {
-  fprintf( outf, "PutVoid(%2d, %2d)\n ", x, y);
+  //fprintf( outf, "PutVoid(%2d, %2d)\n ", x, y);
 }
 
 static void put_floor(int x, int y, FILE*outf) {
@@ -197,7 +197,7 @@ void map_to_pov(terminal_t* term,
 	break;
 	
       case '#':
-	if (g->color == 0) 
+	if ((g->color == 0) || (g->color == 15)) 
 	  put_ground(x1,y1,outf);
 	break;
       case '<':
@@ -233,7 +233,7 @@ void map_to_pov(terminal_t* term,
       if (g->code == 0) {
 	continue;
       }
-      put_floor(x1,y1,outf);
+      //put_floor(x1,y1,outf);
       fprintf ( outf, "object { Tiles[%d][%d] scale 0.8 ", g->ascii, g->color);	  
       fprintf( outf, " translate < %2d, %2d,  0> }\n", x1, y1);
     }
@@ -259,7 +259,7 @@ void map_to_pov(terminal_t* term,
       const int y0 = y1 - g1->dy;
       const glyph_t* g0 = map_get_monster(prev_map,x0,y0);
       const double T = time;
-      put_floor(x1,y1,outf);
+      //put_floor(x1,y1,outf);
       //
       // heading
       //
