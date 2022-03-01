@@ -111,11 +111,8 @@ void map_to_pov(terminal_t* term,
   for ( int y1 = 1 ; ( y1 < 22 ) ; ++y1 ) {
     for ( int x1 = 0 ; x1 < map->ncols ; ++x1 ) {
       glyph_t* g = map_get_dungeon(map,x1,y1);
-      if (g->code == 0) {
-	put_void(x1,y1,outf);
-	continue;
-      }
       switch(g->ascii) {
+      case  0:
       case ' ':
 	put_void(x1,y1,outf);
 	break;
