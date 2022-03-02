@@ -16,7 +16,7 @@ all: povhack
 	gcc -Wall -g -c $<
 
 povhack: $(OBJ) povhack.c Makefile
-	gcc -Wall -o povhack povhack.c $(OBJ) -ltty -lm
+	gcc -Wall -o povhack povhack.c $(OBJ) -lm
 
 
 clean:
